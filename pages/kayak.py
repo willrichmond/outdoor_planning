@@ -3,9 +3,6 @@ import polars as pl
 from utils.kayak_utils import get_gauge_data, get_clean_gauge_data, get_kayaking_levels, get_current_river_levels
 from data.kayak import section_list, gauge_list,river_list
 
-st.title("📊 Page One")
-st.write("This is page one.")
-
 @st.cache_data
 def load_static_data():
     return pl.DataFrame(section_list), pl.DataFrame(gauge_list), pl.DataFrame(river_list)
@@ -20,21 +17,52 @@ def run_apis():
 
     return kayaking_levels, current_river_levels
 
+
+# Data
 with st.spinner("Fetching river levels..."):
     kayaking_levels, current_river_levels = run_apis()
 
-
 section, gauge, river = load_static_data()
 
-st.subheader("Sections")
-st.dataframe(section)
+st.title("📊 Kayaking")
 
-st.subheader("Gauges")
-st.dataframe(gauge)
+# Tabs
+tab_current, tab_forecast, tab_river_details = st.tabs(["Current", "Forecast","River Details"])
 
-st.subheader("Rivers")
-st.dataframe(river)
+with tab_current:
+    st.subheader("Current River Levels")
+    st.dataframe(current_river_levels)
+with tab_forecast:
+    st.header("Forecast")
 
-st.subheader("Current River Levels")
-st.dataframe(kayaking_levels)
-st.dataframe(current_river_levels)
+    section_options = st.multiselect(
+    "Pick Your Rivers!",
+    ['main_payette', 'lower_payette', 'lower_payette_climax', 'payette_gutter', 'nf_payette_warm_up', 'sf_payette_grandjean', 'sf_payette_kirkham', 'sf_payette_canyon_low', 'sf_payette_canyon_high', 'sf_payette_staircase', 'deadwood', 'salmon_riggins', 'salmon_mill_wave', 'little_salmon', 'upper_lochsa', 'lower_lochsa', 'boise_ww_park', 'boise_barber_park', 'owyhee_three_forks', 'mf_salmon', 'murtaugh'],
+    default=['sf_payette_canyon_low', 'sf_payette_canyon_high', 'sf_payette_staircase',],
+)
+
+    kayaking_levels_filtered = (
+        kayaking_levels
+        .unpivot(
+        index=['mountain_time','data_type'],
+        on=[x for x in kayaking_levels.columns if x not in ('mountain_time', 'data_type')],
+        variable_name="section",
+        value_name="flow"
+        )
+        .filter(pl.col("section").is_in(section_options))
+    )
+
+    st.line_chart(kayaking_levels_filtered,
+                  x="mountain_time",
+                  y="flow", color="section",
+                  width="stretch",
+                  height=500)
+
+with tab_river_details:
+    st.header("River Details")
+    st.subheader("Sections")
+    st.dataframe(section)
+    st.subheader("Gauges")
+    st.dataframe(gauge)
+    st.subheader("Rivers")
+    st.dataframe(river)

@@ -43,17 +43,19 @@ def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
     """
     all_rows: List[Dict[str, Any]] = []
 
+    all_rows = []
+
     for row in df.iter_rows(named=True):
-        gauge_name: str = row["gauge_name"]
-        river_id: str = row["river_id"]
-        usgs_id: str = row["waterdata_usgs_identifier"]
-        noaa_id: Optional[str] = row.get("noaa_forecast_identifier")
+        gauge_name = row["gauge_name"]
+        river_id = row["river_id"]
+        usgs_id = row["waterdata_usgs_identifier"]
+        noaa_id = row["noaa_forecast_identifier"]
 
         # =========================
         # USGS (last 24 hours)
         # =========================
         try:
-            params: Dict[str, Any] = {
+            params = {
                 "monitoring_location_id": usgs_id,
                 "parameter_code": "00060,00065",
                 "time": "PT24H",
@@ -64,24 +66,24 @@ def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
             url = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items"
             r = requests.get(url, params=params, timeout=30)
             r.raise_for_status()
-            data: Dict[str, Any] = r.json()
+            data = r.json()
 
-            features: List[Dict[str, Any]] = data.get("features", [])
+            features = data.get("features", [])
 
             if features:
                 logger.info(f"✅ USGS success | {river_id} | {gauge_name} | rows={len(features)}")
             else:
                 logger.info(f"⚠️ USGS empty | {river_id} | {gauge_name}")
 
-            rows: List[Dict[str, Any]] = []
+            rows = []
             for f in features:
-                p: Dict[str, Any] = f.get("properties", {})
+                p = f["properties"]
 
                 rows.append(
                     {
-                        "time": p.get("time"),
-                        "parameter_code": p.get("parameter_code"),
-                        "value": float(p.get("value")) if p.get("value") is not None else None,
+                        "time": p["time"],
+                        "parameter_code": p["parameter_code"],
+                        "value": float(p["value"]),
                     }
                 )
 
@@ -101,13 +103,13 @@ def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
                     })
                 )
 
-                for ts_row in temp_df.iter_rows(named=True):
+                for ts_row in temp_df.iter_rows(named=True):  # <-- renamed
                     all_rows.append(
                         {
                             "gauge_name": gauge_name,
                             "river_id": river_id,
                             "source": "usgs",
-                            "time": ts_row.get("time"),
+                            "time": ts_row["time"],
                             "flow_cfs": ts_row.get("flow_cfs"),
                             "stage_ft": ts_row.get("stage_ft"),
                         }
@@ -124,19 +126,19 @@ def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
                 url = f"https://api.water.noaa.gov/nwps/v1/gauges/{noaa_id}/stageflow/forecast"
                 r = requests.get(url, headers={"accept": "application/json"}, timeout=30)
                 r.raise_for_status()
-                data: Dict[str, Any] = r.json()
+                data = r.json()
 
-                points: List[Dict[str, Any]] = data.get("data", [])
-                primary_unit: Optional[str] = data.get("primaryUnits")
+                points = data.get("data", [])
 
-                if primary_unit == "kcfs":
-                    value_cfs_key = "primary"
-                    value_ft_key = "secondary"
-                    multiplier = 1000.0
+                primary_unit = data.get("primaryUnits")
+
+                if primary_unit == 'kcfs':
+                  value_cfs = 'primary'
+                  value_feet = 'secondary'
                 else:
-                    value_cfs_key = "secondary"
-                    value_ft_key = "primary"
-                    multiplier = 1.0
+                  value_cfs = 'secondary'
+                  value_feet = 'primary'
+
 
                 if points:
                     logger.info(f"✅ NOAA success | {river_id} | {gauge_name} | rows={len(points)}")
@@ -149,15 +151,9 @@ def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
                             "gauge_name": gauge_name,
                             "river_id": river_id,
                             "source": "noaa_forecast",
-                            "time": p.get("validTime"),
-                            "flow_cfs": (
-                                float(p.get(value_cfs_key)) * multiplier
-                                if p.get(value_cfs_key) is not None else None
-                            ),
-                            "stage_ft": (
-                                float(p.get(value_ft_key))
-                                if p.get(value_ft_key) is not None else None
-                            ),
+                            "time": p["validTime"],
+                            "flow_cfs": p[value_cfs] * 1000,
+                            "stage_ft": p[value_feet],
                         }
                     )
 
