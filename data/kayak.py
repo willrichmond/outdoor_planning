@@ -113,8 +113,8 @@ gauge_list = [
     {
         "gauge_name": "North Fork Payette River at Cascade, ID",
         "river_id": 4,
-        "waterdata_usgs_identifier": "USGS-13245000",
-        "noaa_forecast_identifier": "13245000",
+        "waterdata_usgs_identifier": None,
+        "noaa_forecast_identifier": "CSDI1",
         "lat": 44.5248931741067,
         "lon": -116.046798314511,
     },
