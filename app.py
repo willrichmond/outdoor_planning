@@ -17,3 +17,14 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 # Join the section names
 # Create a flow function for level & boat type
 # Fix the charts
+# Update lat / lon for put ins
+# Weather API function
+# Add weather to river details
+# Create a river page with flow lines
+# Toggle by boat type
+# https://altair.streamlit.app/Layer_Line_Color_Rule
+
+
+# Follow Up PR
+# Add weather for skiing tab
+# AQI API function
