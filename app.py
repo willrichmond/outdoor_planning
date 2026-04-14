@@ -10,6 +10,8 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 
 
 # To-Dos
+
+# add prediction type, and forecast type to gauges
 # split the api calls
 # Split guages into separate for NOAA only
 # Fix the API calls (payette at cascade dam)
@@ -25,6 +27,16 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 # https://altair.streamlit.app/Layer_Line_Color_Rule
 
 
+# example = example.rename(
+#     {
+#         col: example_titles[int(col.split('_')[-1])]
+#         for col in example.columns
+#         if col.startswith('section_id')
+#     }
+# )
+
 # Follow Up PR
+# get lat/lon for put ins
+# simple noaa api for river details page
 # Add weather for skiing tab
 # AQI API function
