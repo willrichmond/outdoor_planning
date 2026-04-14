@@ -43,6 +43,7 @@ def get_noaa_flow_forecast(gauge_dict):
                     "gauge_name": gauge_name,
                     "gauge_id": gauge_id,
                     "source": "noaa_forecast",
+                    'data_type': 'forecast',
                     "time": p["validTime"],
                     "flow_cfs": p[value_cfs] * 1000,
                     "stage_ft": p[value_feet],
@@ -83,7 +84,7 @@ def get_usgs_observed_flow(gauge_dict):
         if features:
             logger.info(f"✅ USGS success | {gauge_id} | {gauge_name} | rows={len(features)}")
         else:
-            #logger.info(f"⚠️ USGS empty | {gauge_id} | {gauge_name}")
+            logger.info(f"⚠️ USGS empty | {gauge_id} | {gauge_name}")
 
             return None
 
@@ -121,6 +122,7 @@ def get_usgs_observed_flow(gauge_dict):
                         "gauge_name": gauge_name,
                         "gauge_id": gauge_id,
                         "source": "usgs",
+                        'data_type': 'observed',
                         "time": ts_row["time"],
                         "flow_cfs": ts_row.get("flow_cfs"),
                         "stage_ft": ts_row.get("stage_ft"),
@@ -160,10 +162,11 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
                     gauge_name = pl.lit(gauge_name),
                     gauge_id = pl.lit(gauge_id),
                     source = pl.lit("bureau_reclamation"),
+                    data_type= pl.lit('observed'),
                     flow_cfs = pl.col('flow_cfs').cast(pl.Utf8).str.strip_chars().cast(pl.Float64, strict=False),
                     stage_ft = pl.col('stage_ft').cast(pl.Utf8).str.strip_chars().cast(pl.Float64, strict=False),
                 )
-                .select('gauge_name','gauge_id','source','time','flow_cfs','stage_ft')
+                .select('gauge_name','gauge_id','source','data_type','time','flow_cfs','stage_ft')
                 .collect()
                 .to_dicts()
                 )
@@ -184,36 +187,30 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
 
 def get_river_gauge_data(gauge_list):
 
-    logger.info(gauge_list)
+    logger.info('Beggining to fetch river gauge data for all gauges...')
 
     gauge_data_all = []
 
     for gauge_loop in gauge_list:
         logger.info(f"Processing gauge: {gauge_loop['gauge_name']}")
-        logger.info(f"Gauge details: {gauge_loop}")
 
         if gauge_loop['observed_api'] == 'waterdata_usgs':
             observed_data = get_usgs_observed_flow(gauge_loop)
         elif gauge_loop['observed_api'] == 'bureau_reclamation':
-            logger.info(f"Fetching Bureau Reclamation data for {gauge_loop['gauge_name']} using ID {gauge_loop['bureau_reclamation_identifier']}")
             observed_data = get_bureau_reclamation_observed_flow(gauge_loop)
-            logger.info(f"Bureau Reclamation data for {gauge_loop['gauge_name']}: {observed_data}")
 
 
         forecast_data = get_noaa_flow_forecast(gauge_loop)
 
         if observed_data is not None:
-            #logger.info(f"Adding observed data for {gauge_loop['gauge_name']} to master list. Rows: {len(observed_data)}")
             gauge_data_all.extend(observed_data)
 
         if forecast_data is not None:
-            #logger.info(f"Adding forecast data for {gauge_loop['gauge_name']} to master list. Rows: {len(forecast_data)}")
             gauge_data_all.extend(forecast_data)
 
     if not gauge_data_all:
         return None
 
-    # logger.info(gauge_data_all)
     return pl.DataFrame(gauge_data_all)
 
 

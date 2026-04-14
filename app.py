@@ -11,14 +11,10 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 
 # To-Dos
 
-# add prediction type, and forecast type to gauges
-# add dataset type (observed/forecast)
 # clean the buerau of reclamation data
 # update the logger statements
 # remove other functions
 # split the api calls
-# Split guages into separate for NOAA only
-# Fix the API calls (payette at cascade dam)
 # Update the formulas for section_id
 # Join the section names
 # Create a flow function for level & boat type
