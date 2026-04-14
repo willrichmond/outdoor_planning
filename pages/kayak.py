@@ -22,7 +22,7 @@ def run_apis():
 with st.spinner("Fetching river levels..."):
     kayaking_levels, current_river_levels = run_apis()
 
-section, gauge, river = load_static_data()
+section_details, gauge_details, river_details = load_static_data()
 
 st.title("📊 Kayaking")
 
@@ -61,8 +61,8 @@ with tab_forecast:
 with tab_river_details:
     st.header("River Details")
     st.subheader("Sections")
-    st.dataframe(section)
+    st.dataframe(section_details)
     st.subheader("Gauges")
-    st.dataframe(gauge)
+    st.dataframe(gauge_details)
     st.subheader("Rivers")
-    st.dataframe(river)
+    st.dataframe(river_details)

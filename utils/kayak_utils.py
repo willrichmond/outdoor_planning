@@ -300,42 +300,47 @@ def get_kayaking_levels(
     .sort(['mountain_time','data_type'])
     .with_columns(pl.all().forward_fill())
     .with_columns(
-        main_payette = pl.col('Payette River near Horseshoe Bend, ID'),
-        lower_payette = pl.col('Payette River near Horseshoe Bend, ID'),
-        lower_payette_climax = pl.col('Payette River near Horseshoe Bend, ID'),
-        payette_gutter = pl.col('Payette River near Horseshoe Bend, ID'),
+        section_id_1 = pl.col('Payette River near Horseshoe Bend, ID'),
+        section_id_2 = pl.col('Payette River near Horseshoe Bend, ID'),
+        section_id_3 = pl.col('Payette River near Horseshoe Bend, ID'),
+        section_id_4 = pl.col('Payette River near Horseshoe Bend, ID'),
 
-        nf_payette_warm_up = pl.col('North Fork Payette River at Banks, ID'),
+        section_id_5 = pl.col('North Fork Payette River at Banks, ID'),
 
-        sf_payette_grandjean = pl.col('South Fork Payette River at Lowman, ID'),
-        sf_payette_kirkham = pl.col('South Fork Payette River at Lowman, ID'),
-        sf_payette_canyon_low = pl.col('South Fork Payette River at Lowman, ID') + pl.col('Deadwood River below Deadwood Reservoir near Lowman, ID'),
-        sf_payette_canyon_high = pl.col('Payette River near Horseshoe Bend, ID') - pl.col('North Fork Payette River at Banks, ID') - pl.col('Middle Fork Payette River near Crouch, ID'),
-        sf_payette_staircase = pl.col('Payette River near Horseshoe Bend, ID') - pl.col('North Fork Payette River at Banks, ID'),
-
-
-
-        deadwood = pl.col('Deadwood River below Deadwood Reservoir near Lowman, ID'),
-
-        salmon_riggins = pl.col('Salmon River at White Bird, ID'),
-        salmon_mill_wave = pl.col('Salmon River at White Bird, ID'),
-
-        little_salmon = pl.col('Little Salmon River at Riggins, ID'),
-
-        upper_lochsa = pl.col('Lochsa River near Lowell, ID'),
-        lower_lochsa = pl.col('Lochsa River near Lowell, ID'),
+        section_id_6 = pl.col('South Fork Payette River at Lowman, ID'),
+        section_id_7 = pl.col('South Fork Payette River at Lowman, ID'),
+        section_id_8 = pl.col('South Fork Payette River at Lowman, ID') + pl.col('Deadwood River below Deadwood Reservoir near Lowman, ID'),
+        section_id_9 = pl.col('Payette River near Horseshoe Bend, ID') - pl.col('North Fork Payette River at Banks, ID') - pl.col('Middle Fork Payette River near Crouch, ID'),
+        section_id_10 = pl.col('Payette River near Horseshoe Bend, ID') - pl.col('North Fork Payette River at Banks, ID'),
 
 
-        boise_ww_park = pl.col('Boise River at Glenwood Bridge near Boise, ID'),
-        boise_barber_park = pl.col('Boise River at Glenwood Bridge near Boise, ID'),
 
-        owyhee_three_forks = pl.col('Owyhee River near Rome, OR'),
+        section_id_11 = pl.col('Deadwood River below Deadwood Reservoir near Lowman, ID'),
 
-        mf_salmon = pl.col('Middle Fork Salmon River near Yellow Pine, ID'),
+        section_id_12 = pl.col('Salmon River at White Bird, ID'),
+        section_id_13 = pl.col('Salmon River at White Bird, ID'),
+        section_id_14 = pl.col('Salmon River at White Bird, ID'),
 
-        murtaugh = pl.col('Snake River at Milner, ID'),
+        section_id_15 = pl.col('Little Salmon River at Riggins, ID'),
+
+        section_id_16 = pl.col('Lochsa River near Lowell, ID'),
+        section_id_17 = pl.col('Lochsa River near Lowell, ID'),
 
 
+        section_id_18 = pl.col('Boise River at Glenwood Bridge near Boise, ID'),
+        section_id_19 = pl.col('Boise River at Glenwood Bridge near Boise, ID'),
+
+        section_id_20 = pl.col('Owyhee River near Rome, OR'),
+
+        section_id_21 = pl.col('Middle Fork Salmon River near Yellow Pine, ID'),
+
+        section_id_22 = pl.col('Snake River at Milner, ID'),
+
+        section_id_23 = pl.col('South Fork Payette River at Lowman, ID') + pl.col('Deadwood River below Deadwood Reservoir near Lowman, ID'),
+        section_id_24 = pl.col('Payette River near Horseshoe Bend, ID') - pl.col('North Fork Payette River at Banks, ID') - pl.col('Middle Fork Payette River near Crouch, ID'),
+
+        section_id_25 = pl.lit(-999),
+        section_id_26 = pl.col('Middle Fork Payette River near Crouch, ID'),
     )
     .drop(
         'Boise River at Glenwood Bridge near Boise, ID',
@@ -350,10 +355,15 @@ def get_kayaking_levels(
         'Little Salmon River at Riggins, ID',
         'Snake River at Milner, ID',
         'Middle Fork Salmon River near Yellow Pine, ID',
+        'North Fork Payette River at Cascade, ID',
     )
     )
 
     return kayaking_levels
+
+# def get_kayaking_levels_clean(kayaking_levels: pl.DataFrame,
+
+#                               ) -> pl.DataFrame:
 
 def get_current_river_levels(kayaking_levels: pl.DataFrame) -> pl.DataFrame:
     """

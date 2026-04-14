@@ -15,6 +15,7 @@ river_list = [
 
 gauge_list = [
     {
+        "gauge_id": 1,
         "gauge_name": "Lochsa River near Lowell, ID",
         "river_id": 8,
         "waterdata_usgs_identifier": "USGS-13337000",
@@ -23,6 +24,7 @@ gauge_list = [
         "lon": -115.5982,
     },
     {
+        "gauge_id": 2,
         "gauge_name": "Payette River near Horseshoe Bend, ID",
         "river_id": 1,
         "waterdata_usgs_identifier": "USGS-13247500",
@@ -31,6 +33,7 @@ gauge_list = [
         "lon": -116.1954,
     },
     {
+        "gauge_id": 3,
         "gauge_name": "North Fork Payette River at Banks, ID",
         "river_id": 4,
         "waterdata_usgs_identifier": "USGS-13246000",
@@ -39,6 +42,7 @@ gauge_list = [
         "lon": -116.1267,
     },
     {
+        "gauge_id": 4,
         "gauge_name": "South Fork Payette River at Lowman, ID",
         "river_id": 2,
         "waterdata_usgs_identifier": "USGS-13235000",
@@ -47,6 +51,7 @@ gauge_list = [
         "lon": -115.6254,
     },
     {
+        "gauge_id": 5,
         "gauge_name": "Deadwood River below Deadwood Reservoir near Lowman, ID",
         "river_id": 5,
         "waterdata_usgs_identifier": "USGS-13236500",
@@ -55,6 +60,7 @@ gauge_list = [
         "lon": -115.6550,
     },
     {
+        "gauge_id": 6,
         "gauge_name": "Middle Fork Payette River near Crouch, ID",
         "river_id": 3,
         "waterdata_usgs_identifier": "USGS-13237920",
@@ -63,6 +69,7 @@ gauge_list = [
         "lon": -115.9684,
     },
     {
+        "gauge_id": 7,
         "gauge_name": "Boise River at Glenwood Bridge near Boise, ID",
         "river_id": 9,
         "waterdata_usgs_identifier": "USGS-13206000",
@@ -71,6 +78,7 @@ gauge_list = [
         "lon": -116.2807,
     },
     {
+        "gauge_id": 8,
         "gauge_name": "Salmon River at White Bird, ID",
         "river_id": 6,
         "waterdata_usgs_identifier": "USGS-13317000",
@@ -79,6 +87,7 @@ gauge_list = [
         "lon": -116.3082,
     },
     {
+        "gauge_id": 9,
         "gauge_name": "Little Salmon River at Riggins, ID",
         "river_id": 7,
         "waterdata_usgs_identifier": "USGS-13316500",
@@ -87,6 +96,7 @@ gauge_list = [
         "lon": -116.3150,
     },
     {
+        "gauge_id": 10,
         "gauge_name": "Middle Fork Salmon River near Yellow Pine, ID",
         "river_id": 11,
         "waterdata_usgs_identifier": "USGS-13309220",
@@ -95,6 +105,7 @@ gauge_list = [
         "lon": -115.4973,
     },
     {
+        "gauge_id": 11,
         "gauge_name": "Snake River at Milner, ID",
         "river_id": 12,
         "waterdata_usgs_identifier": "USGS-13087995",
@@ -103,7 +114,8 @@ gauge_list = [
         "lon": -114.0240,
     },
     {
-        "gauge_name": "Owyhee River near Rome, OR",
+       "gauge_id": 12,
+       "gauge_name": "Owyhee River near Rome, OR",
         "river_id": 10,
         "waterdata_usgs_identifier": "USGS-13181000",
         "noaa_forecast_identifier": "13181000",
@@ -111,6 +123,7 @@ gauge_list = [
         "lon": -117.6330,
     },
     {
+        "gauge_id": 13,
         "gauge_name": "North Fork Payette River at Cascade, ID",
         "river_id": 4,
         "waterdata_usgs_identifier": None,
