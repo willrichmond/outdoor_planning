@@ -6,7 +6,7 @@ from data.kayak import section_list, gauge_list,river_list
 
 @st.cache_data
 def load_static_data():
-    return pl.DataFrame(section_list), pl.DataFrame(gauge_list), pl.DataFrame(river_list)
+    return pl.DataFrame(section_list), gauge_list, pl.DataFrame(river_list)
 
 
 @st.cache_data(ttl=3600)
@@ -22,7 +22,7 @@ def load_static_data():
 
 #     return kayaking_levels, current_river_levels, more_river_gauge_data
 
-def run_apis():
+def run_river_flow_apis():
     more_river_gauge_data= get_river_gauge_data(gauge_list)
 
     return  more_river_gauge_data
@@ -32,7 +32,7 @@ def run_apis():
 # Data
 with st.spinner("Fetching river levels..."):
     #kayaking_levels, current_river_levels,more_river_gauge_data = run_apis()
-    more_river_gauge_data = run_apis()
+    more_river_gauge_data = run_river_flow_apis()
 
 section_details, gauge_details, river_details = load_static_data()
 

@@ -154,11 +154,12 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
         r.raise_for_status()
         bureau_reclamation_observed_flow = (pl.scan_csv(io.StringIO(r.text))
                 .rename({
-                    'DateTime':'time',
+                    'DateTime':'mountain_time',
                     'csci_q': 'flow_cfs',
                     'csci_gh': 'stage_ft'
                 })
                 .with_columns(
+                    mountain_time = pl.col('mountain_time').str.to_datetime("%Y-%m-%d %H:%M"),
                     gauge_name = pl.lit(gauge_name),
                     gauge_id = pl.lit(gauge_id),
                     source = pl.lit("bureau_reclamation"),
@@ -166,7 +167,8 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
                     flow_cfs = pl.col('flow_cfs').cast(pl.Utf8).str.strip_chars().cast(pl.Float64, strict=False),
                     stage_ft = pl.col('stage_ft').cast(pl.Utf8).str.strip_chars().cast(pl.Float64, strict=False),
                 )
-                .select('gauge_name','gauge_id','source','data_type','time','flow_cfs','stage_ft')
+                .select('gauge_name','gauge_id','source','data_type','mountain_time','flow_cfs','stage_ft')
+                .filter(pl.col("mountain_time").dt.minute()==0)
                 .collect()
                 .to_dicts()
                 )
@@ -185,6 +187,26 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
 
     return bureau_reclamation_observed_flow
 
+def clean_usgs_noaa_data(gauge_data):
+    return (
+        pl.DataFrame(gauge_data)
+        # Converting to datetime
+        .with_columns(
+        pl.col("time").str.replace("Z$", "+00:00")  # normalize timezone
+        .str.to_datetime("%Y-%m-%dT%H:%M:%S%z")
+        .dt.truncate("1m")
+    )
+        # reducing to hourly only
+        .filter(pl.col("time").dt.minute()==0)
+        # converting to mountain time
+        .with_columns(
+        mountain_time = pl.col("time").dt.convert_time_zone("America/Denver").dt.replace_time_zone(None)
+        )
+        # Dropping UTC Time
+        .drop('time')
+        .to_dicts()
+        )
+
 def get_river_gauge_data(gauge_list):
 
     logger.info('Beggining to fetch river gauge data for all gauges...')
@@ -196,16 +218,24 @@ def get_river_gauge_data(gauge_list):
 
         if gauge_loop['observed_api'] == 'waterdata_usgs':
             observed_data = get_usgs_observed_flow(gauge_loop)
+            if observed_data is not None:
+                observed_data = clean_usgs_noaa_data(observed_data)
+                gauge_data_all.extend(observed_data)
+
         elif gauge_loop['observed_api'] == 'bureau_reclamation':
             observed_data = get_bureau_reclamation_observed_flow(gauge_loop)
+            if observed_data is not None:
+                gauge_data_all.extend(observed_data)
+
+
+        else:
+            logger.info(f"⚠️ Unknown observed API for gauge {gauge_loop['gauge_name']}: {gauge_loop['observed_api']}")
+            observed_data = None
 
 
         forecast_data = get_noaa_flow_forecast(gauge_loop)
-
-        if observed_data is not None:
-            gauge_data_all.extend(observed_data)
-
         if forecast_data is not None:
+            forecast_data = clean_usgs_noaa_data(forecast_data)
             gauge_data_all.extend(forecast_data)
 
     if not gauge_data_all:
