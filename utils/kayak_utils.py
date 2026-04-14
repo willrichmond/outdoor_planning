@@ -1,8 +1,188 @@
 from utils.logger import logger
 import polars as pl
 import requests
+import io
 from typing import Any, Dict, List, Optional,Literal
 
+
+def get_noaa_flow_forecast(gauge_dict):
+    gauge_id = gauge_dict['gauge_id']
+    gauge_name = gauge_dict['gauge_name']
+    noaa_id = gauge_dict['noaa_forecast_identifier']
+
+    noaa_flow_forecast_rows = []
+
+    try:
+        url = f"https://api.water.noaa.gov/nwps/v1/gauges/{noaa_id}/stageflow/forecast"
+        r = requests.get(url, headers={"accept": "application/json"}, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+
+        points = data.get("data", [])
+
+        primary_unit = data.get("primaryUnits")
+
+        if primary_unit == 'kcfs':
+            value_cfs = 'primary'
+            value_feet = 'secondary'
+        else:
+            value_cfs = 'secondary'
+            value_feet = 'primary'
+
+
+        if points:
+            logger.info(f"✅ NOAA success | {gauge_id} | {gauge_name} | rows={len(points)}")
+        else:
+            logger.info(f"⚠️ NOAA empty | {gauge_id} | {gauge_name}")
+
+            return None
+
+        for p in points:
+            noaa_flow_forecast_rows.append(
+                {
+                    "gauge_name": gauge_name,
+                    "gauge_id": gauge_id,
+                    "source": "noaa_forecast",
+                    "time": p["validTime"],
+                    "flow_cfs": p[value_cfs] * 1000,
+                    "stage_ft": p[value_feet],
+                }
+            )
+
+    except Exception as e:
+        logger.info(f"❌ NOAA failed | {gauge_id} | {gauge_name} | {e}")
+
+        return None
+
+    return noaa_flow_forecast_rows
+
+def get_usgs_observed_flow(gauge_dict):
+    gauge_id = gauge_dict['gauge_id']
+    gauge_name = gauge_dict['gauge_name']
+    usgs_id = gauge_dict['waterdata_usgs_identifier']
+
+    usgs_observed_flow_rows = []
+
+    try:
+
+        params = {
+            "monitoring_location_id": usgs_id,
+            "parameter_code": "00060,00065",
+            "time": "PT24H",
+            "limit": 1000,
+            "f": "json",
+        }
+
+        url = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items"
+        r = requests.get(url, params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+
+        features = data.get("features", [])
+
+        if features:
+            logger.info(f"✅ USGS success | {gauge_id} | {gauge_name} | rows={len(features)}")
+        else:
+            logger.info(f"⚠️ USGS empty | {gauge_id} | {gauge_name}")
+
+            return None
+
+        rows = []
+        for f in features:
+            p = f["properties"]
+
+            rows.append(
+                {
+                    "time": p["time"],
+                    "parameter_code": p["parameter_code"],
+                    "value": float(p["value"]),
+                }
+            )
+
+        if rows:
+            temp_df = pl.DataFrame(rows)
+
+            temp_df = (
+                temp_df
+                .pivot(
+                    index="time",
+                    on="parameter_code",
+                    values="value"
+                )
+                .rename({
+                    "00060": "flow_cfs",
+                    "00065": "stage_ft"
+                })
+            )
+
+            for ts_row in temp_df.to_dicts():
+                usgs_observed_flow_rows.append(
+                    {
+                        "gauge_name": gauge_name,
+                        "gauge_id": gauge_id,
+                        "source": "usgs",
+                        "time": ts_row["time"],
+                        "flow_cfs": ts_row.get("flow_cfs"),
+                        "stage_ft": ts_row.get("stage_ft"),
+                    }
+                )
+
+    except Exception as e:
+        logger.info(f"❌ USGS failed | {river_id} | {gauge_name} | {e}")
+
+        return None
+
+    return usgs_observed_flow_rows
+
+def get_bureau_reclamation_observed_flow(gauge_dict):
+    gauge_id = gauge_dict['gauge_id']
+    gauge_name = gauge_dict['gauge_name']
+    bureau_reclamation_id = gauge_dict['bureau_reclamation_identifier']
+
+    try:
+
+        url = "https://www.usbr.gov/pn-bin/instant.pl"
+        params = {
+            "list": f"{bureau_reclamation_id} Q,{bureau_reclamation_id} GH",
+            "format": "csv",
+            "back":"24",
+        }
+
+        r = requests.get(url, params=params, timeout=30)
+        r.raise_for_status()
+        bureau_reclamation_observed_flow = (pl.scan_csv(io.StringIO(r.text))
+                .rename({
+                    'DateTime':'time',
+                    'csci_q': 'flow_cfs',
+                    'csci_gh': 'stage_ft'
+                })
+                .with_columns(
+                    gauge_name = pl.lit(gauge_name),
+                    gauge_id = pl.lit(gauge_id),
+                    source = pl.lit("bureau_reclamation"),
+                )
+                .select('gauge_name','gauge_id','time','flow_cfs','stage_ft')
+                .collect()
+                .to_dicts()
+                )
+
+        if bureau_reclamation_observed_flow:
+            logger.info(f"✅ Bureau Reclaimation success | {gauge_id} | {gauge_name} | rows={len(bureau_reclamation_observed_flow)}")
+        else:
+            logger.info(f"⚠️ Bureau Reclaimation empty | {gauge_id} | {gauge_name}")
+
+            return None
+
+    except Exception as e:
+            logger.info(f"❌ Bureau Reclaimation failed | {gauge_id} | {gauge_name} | {e}")
+            return None
+
+
+    return bureau_reclamation_observed_flow
+
+def get_river_gauge_data(df):
+
+    return None
 
 
 def get_gauge_data(df: pl.DataFrame) -> pl.DataFrame:

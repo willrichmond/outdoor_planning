@@ -9,6 +9,7 @@ def load_static_data():
 
 
 @st.cache_data(ttl=3600)
+# use the gauge list here
 def run_apis():
     gauge_data = get_gauge_data(pl.DataFrame(gauge_list))
     clean_gauge_data = get_clean_gauge_data(gauge_data)
