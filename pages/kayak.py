@@ -1,7 +1,7 @@
 import streamlit as st
 import polars as pl
 from utils.logger import logger
-from utils.kayak_utils import get_gauge_data, get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data
+from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data
 from data.kayak import section_list, gauge_list,river_list
 
 @st.cache_data
@@ -23,21 +23,32 @@ def load_static_data():
 #     return kayaking_levels, current_river_levels, more_river_gauge_data
 
 def run_river_flow_apis():
-    more_river_gauge_data= get_river_gauge_data(gauge_list)
+    river_gauge_data= get_river_gauge_data(gauge_list)
+    clean_gauge_data = get_clean_gauge_data(river_gauge_data)
+    kayaking_levels_cfs= get_kayaking_levels(
+    df_clean=clean_gauge_data,
+    value_type="flow_cfs",
+)
+    kayaking_levels_ft= get_kayaking_levels(
+    df_clean=clean_gauge_data,
+    value_type="stage_ft",)
 
-    return  more_river_gauge_data
+    return  river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft
 
 
 
 # Data
 with st.spinner("Fetching river levels..."):
     #kayaking_levels, current_river_levels,more_river_gauge_data = run_apis()
-    more_river_gauge_data = run_river_flow_apis()
+    river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft = run_river_flow_apis()
 
 section_details, gauge_details, river_details = load_static_data()
 
 st.title("📊 Kayaking")
-st.dataframe(more_river_gauge_data)
+st.dataframe(river_gauge_data)
+st.dataframe(clean_gauge_data)
+st.dataframe(kayaking_levels_cfs)
+st.dataframe(kayaking_levels_ft)
 # Tabs
 # tab_current, tab_forecast, tab_river_details = st.tabs(["Current", "Forecast","River Details"])
 
