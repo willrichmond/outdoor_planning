@@ -423,39 +423,106 @@ def get_kayaking_levels(
     )
     return kayaking_levels
 
+def get_kayaking_levels_pivot(kayaking_levels,flow_unit):
+    return (kayaking_levels
+ .unpivot(index=['mountain_time','data_type',],variable_name='section',value_name='river_level')
+ .lazy()
+ .with_columns(
+     section_id=pl.col('section').str.replace('section_id_','').str.replace('_max','').cast(pl.Int32),
+     flow_type=pl.when(pl.col('section').str.contains('_max')).then(pl.lit('max')).otherwise(pl.lit('standard') ),
+     flow_unit = pl.lit(flow_unit),
+     river_level = pl.col('river_level').cast(pl.Float32)
+ )
+ .drop('section')
+ .collect()
+ )
 
-def get_current_river_levels(kayaking_levels: pl.DataFrame) -> pl.DataFrame:
-    """
-    Extract the most recent observed river levels for each section.
+def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df):
+    kayaking_levels_ft_pivot = get_kayaking_levels_pivot(kayaking_levels=kayaking_levels_ft,flow_unit='feet')
+    kayaking_levels_cfs_pivot = get_kayaking_levels_pivot(kayaking_levels=kayaking_levels_cfs,flow_unit='cfs')
 
-    This function:
-    - Filters to observed (``data_type == "actual"``) records only.
-    - Selects the most recent timestamp.
-    - Drops time-related metadata columns.
-    - Transposes the data into a long format where each row represents
-      a river section and its current level.
+    kayaking_levels_range = (
+        pl.concat([kayaking_levels_ft_pivot, kayaking_levels_cfs_pivot])
+        .lazy()
+        .join(section_df.lazy().select('section_id',
+                                        'section_name',
+                                        'flow_unit',
+                                        'min_level',
+                                        'medium_level',
+                                        'high_level',
+                                        'max_level',
+                                        'min_creek_boat',
+                                        'max_creek_boat',
+                                        'min_half_slice',
+                                        'max_half_slice',
+                                        'min_play_boat',
+                                        'max_play_boat',),on=['section_id','flow_unit'])
+    .with_columns(
+     flow_range = pl.when(pl.col('river_level') < pl.col('min_level') )
+     .then(pl.lit('Too Low'))
+      .when(pl.col('river_level') < pl.col('medium_level'))
+      .then(pl.lit('Low'))
+      .when(pl.col('river_level') < pl.col('high_level'))
+      .then(pl.lit('Medium'))
+      .when(pl.col('river_level') < pl.col('max_level'))
+      .then(pl.lit('High'))
+     .otherwise(pl.lit('Too High')),
+     run_creekboat=pl.when(pl.col('min_creek_boat').is_null())
+     .then(pl.lit(0))
+     .when(pl.col('river_level').is_between(pl.col('min_creek_boat'),pl.col('max_creek_boat')))
+     .then(pl.lit(1))
+     .otherwise(pl.lit(0)),
+     run_halfslice=pl.when(pl.col('min_half_slice').is_null())
+     .then(pl.lit(0))
+     .when(pl.col('river_level').is_between(pl.col('min_half_slice'),pl.col('max_half_slice')))
+     .then(pl.lit(1))
+     .otherwise(pl.lit(0)),
+     run_playboat=pl.when(pl.col('min_play_boat').is_null())
+     .then(pl.lit(0))
+     .when(pl.col('river_level').is_between(pl.col('min_play_boat'),pl.col('max_play_boat')))
+     .then(pl.lit(1))
+     .otherwise(pl.lit(0))
+ )
+ .drop('min_level',
+ 'medium_level',
+ 'high_level',
+ 'max_level',
+ 'min_creek_boat',
+ 'max_creek_boat',
+ 'min_half_slice',
+ 'max_half_slice',
+ 'min_play_boat',
+ 'max_play_boat',
+  'flow_unit',
+       )
+    .collect()
 
-    Args:
-        kayaking_levels: A Polars DataFrame containing section-level
-            time series data. Expected columns:
-            - mountain_time (datetime)
-            - data_type (str): "actual" or "forecast"
-            - one column per river section (float)
-
-    Returns:
-        pl.DataFrame: A DataFrame with:
-            - Section (str): Section name (column header from input)
-            - Level (float): Most recent observed value for that section
-    """
-    return (
-        kayaking_levels
-        .filter(pl.col("data_type") == "actual")
-        .sort(pl.col("mountain_time"))
-        .tail(1)
-        .drop("mountain_time", "data_type")
-        .transpose(
-            include_header=True,
-            header_name="Section",
-        )
-        .rename({"column_0": "Level"})
     )
+
+    return kayaking_levels_range
+
+
+def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFrame:
+    logger.info(kayaking_levels_range['section_name'].unique())
+    kayaking_current = (
+        kayaking_levels_range
+        .lazy()
+        .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range')
+        .filter(pl.col("data_type") == "observed")
+        .sort(pl.col("mountain_time"))
+        .unique(subset=['section_name',], keep="last")
+        .drop("mountain_time", "data_type")
+        .collect()
+    )
+    logger.info('')
+    logger.info(kayaking_current['section_name'].unique())
+    logger.info(kayaking_current.to_dicts())
+
+    kayaking_current_pivot = (
+        kayaking_current
+        .pivot(index='section_name',columns='flow_type',values=['river_level','flow_range'])
+    )
+
+    logger.info(kayaking_current_pivot.to_dicts())
+
+    return kayaking_current_pivot
