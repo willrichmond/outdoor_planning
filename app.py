@@ -13,6 +13,9 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 # gauges page
 # round everything
 # sort based on river level
+# remove the rounding to round 2
+# pandas styling for the river levels (fix rounding, add commas)
+# fix the color coding
 # clean the buerau of reclamation data
 # update the logger statements
 # paralelize the api calls (claude can help)
