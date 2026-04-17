@@ -374,6 +374,23 @@ def get_kayaking_levels(
     .pivot(index=['mountain_time','data_type'],on='gauge_id',values=value_type)
     .sort(['mountain_time','data_type'])
     .with_columns(pl.all().forward_fill())
+    .with_columns(pl.all().backward_fill())
+    .with_columns(
+        pl.col('1').fill_null(0).alias('1'),
+        pl.col('2').fill_null(0).alias('2'),
+         pl.col('3').fill_null(0).alias('3'),
+         pl.col('4').fill_null(0).alias('4'),
+        pl.col('5').fill_null(0).alias('5'),
+        pl.col('6').fill_null(0).alias('6'),
+        pl.col('7').fill_null(0).alias('7'),
+        pl.col('8').fill_null(0).alias('8'),
+        pl.col('9').fill_null(0).alias('9'),
+        pl.col('10').fill_null(0).alias('10'),
+        pl.col('11').fill_null(0).alias('11'),
+        pl.col('12').fill_null(0).alias('12'),
+        pl.col('13').fill_null(0).alias('13'),
+
+    )
     .with_columns(
         section_id_1 = pl.col('2'),
         section_id_2 = pl.col('2'),
@@ -503,26 +520,37 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
 
 
 def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFrame:
-    logger.info(kayaking_levels_range['section_name'].unique())
+
     kayaking_current = (
         kayaking_levels_range
         .lazy()
         .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range')
         .filter(pl.col("data_type") == "observed")
         .sort(pl.col("mountain_time"))
-        .unique(subset=['section_name',], keep="last")
+        .unique(subset=['section_name','flow_type',], keep="last")
+        .with_columns(river_level=pl.col('river_level').ceil().cast(pl.Int32))
         .drop("mountain_time", "data_type")
         .collect()
     )
-    logger.info('')
-    logger.info(kayaking_current['section_name'].unique())
-    logger.info(kayaking_current.to_dicts())
 
-    kayaking_current_pivot = (
+    kayaking_current_pivot_river_level = (
         kayaking_current
-        .pivot(index='section_name',columns='flow_type',values=['river_level','flow_range'])
+        .pivot(index='section_name',on='flow_type',values=['river_level',])
+        .rename({'standard':'river_level','max':'river_level_max'})
+        .sort('section_name')
     )
 
-    logger.info(kayaking_current_pivot.to_dicts())
+    kayaking_current_pivot_flow_range = (
+        kayaking_current
+        .pivot(index='section_name',on='flow_type',values=['flow_range',])
+        .rename({'standard':'flow_range','max':'flow_range_max'})
+        .sort('section_name')
+    )
 
-    return kayaking_current_pivot
+    kayaking_current_pivot=(
+        kayaking_current_pivot_river_level
+        .join(kayaking_current_pivot_flow_range, on='section_name',)
+
+    )
+
+    return kayaking_current_pivot.to_pandas().astype({'river_level_max': 'Int32'})

@@ -35,7 +35,19 @@ with st.spinner("Fetching river levels..."):
     #kayaking_levels, current_river_levels,more_river_gauge_data = run_apis()
     river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df)
 
+def color_flow_range(row):
+    colors = {
+        'Too Low': 'background-color: #d4e6f1',
+        'Low': 'background-color: #a9cce3',
+        'Medium': 'background-color: #82e0aa',
+        'High': 'background-color: #f0b27a',
+        'Too High': 'background-color: #ec7063',
+        None: ''
+    }
+    color_standard = colors.get(row['flow_range'], '')
+    color_max = colors.get(row['flow_range_max'], '')
 
+    return [color_standard if col == 'river_level' else color_max if col == 'river_level_max' else '' for col in row.index]
 
 st.title("📊 Kayaking")
 st.dataframe(river_gauge_data)
@@ -43,7 +55,10 @@ st.dataframe(clean_gauge_data)
 st.dataframe(kayaking_levels_cfs)
 st.dataframe(kayaking_levels_ft)
 st.dataframe(kayaking_levels_range)
-st.dataframe(kayaking_levels_current)
+st.dataframe(kayaking_levels_current.style.apply(color_flow_range, axis=1),column_config={
+        'flow_range': None,
+        'flow_range_max': None,
+    })
 # Tabs
 # tab_current, tab_forecast, tab_river_details = st.tabs(["Current", "Forecast","River Details"])
 

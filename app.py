@@ -10,7 +10,9 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 
 
 # To-Dos
-
+# gauges page
+# round everything
+# sort based on river level
 # clean the buerau of reclamation data
 # update the logger statements
 # paralelize the api calls (claude can help)
