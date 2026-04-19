@@ -1,7 +1,7 @@
 import streamlit as st
 import polars as pl
 from utils.logger import logger
-from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_kayaking_levels_pivot,get_color_flow_range
+from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_color_flow_range
 from data.kayak.kayak_static import section_list, gauge_list,river_list
 
 @st.cache_data(ttl=3600)
@@ -27,7 +27,10 @@ def run_river_flow_apis(gauge_list,section_df,river_df):
 
     return  river_gauge_data,gauge_run_details,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current
 
-
+# kayaking_levels_current
+# kayaking_levels_range
+# gauge_run_details
+# clean_gauge_data
 
 # Data
 section_df, gauge_list, river_df = load_static_data()
@@ -35,7 +38,7 @@ with st.spinner("Fetching river levels..."):
     river_gauge_data,gauge_run_details,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df,river_df)
 
 
-st.title("📊 Kayaking")
+st.title("🌊 Kayaking")
 
 
 # Tabs
@@ -56,8 +59,6 @@ with tab_forecast:
     options=section_df['section_name'].to_list(),
     default=['Staircase','The Canyon'],
 )
-    st.dataframe(section_df)
-    st.dataframe(kayaking_levels_range)
 
     kayaking_levels_filtered = (
         kayaking_levels_range
@@ -75,13 +76,13 @@ with tab_forecast:
                   width="stretch",
                   height=500)
 
+    st.dataframe(kayaking_levels_filtered)
+
 with tab_river_details:
-    st.dataframe(river_gauge_data)
-    st.dataframe(clean_gauge_data)
-    st.dataframe(kayaking_levels_cfs)
-    st.dataframe(kayaking_levels_ft)
+
+    st.dataframe(kayaking_levels_range)
 
 
 with tab_gauges:
-    st.dataframe(pl.DataFrame(gauge_list))
     st.dataframe(gauge_run_details)
+    st.dataframe(clean_gauge_data)
