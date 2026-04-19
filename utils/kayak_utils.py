@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_noaa_flow_forecast(
-gauge_dict: Dict[str, Any],
+    gauge_dict: Dict[str, Any],
 ) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
     """
     Fetch NOAA stage/flow forecast data for a given gauge.
@@ -112,7 +112,7 @@ gauge_dict: Dict[str, Any],
     return noaa_flow_forecast_rows,gauge_run_dict
 
 def get_usgs_observed_flow(
-gauge_dict: Dict[str, Any],
+    gauge_dict: Dict[str, Any],
 ) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
     """
     Fetch observed flow and stage data from the USGS Water Data API.
@@ -244,7 +244,7 @@ gauge_dict: Dict[str, Any],
     return usgs_observed_flow_rows,gauge_run_dict
 
 def get_bureau_reclamation_observed_flow(
-gauge_dict: Dict[str, Any],
+    gauge_dict: Dict[str, Any],
 ) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
     """
     Fetch observed flow and stage data from the Bureau of Reclamation Hydromet API.
@@ -395,7 +395,7 @@ def clean_usgs_noaa_data(gauge_data: List[Dict[str, Any]]) -> List[Dict[str, Any
         )
 
 def process_gauge(
-gauge_loop: Dict[str, Any],
+    gauge_loop: Dict[str, Any],
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Process a single gauge by fetching observed and forecast data.
@@ -476,7 +476,7 @@ gauge_loop: Dict[str, Any],
 
 
 def fetch_all_gauge_data(
-gauge_list: List[Dict[str, Any]],
+    gauge_list: List[Dict[str, Any]],
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Fetch observed and forecast data for multiple gauges in parallel.
@@ -541,7 +541,7 @@ gauge_list: List[Dict[str, Any]],
 
 
 def get_river_gauge_data(
-gauge_list: List[Dict[str, Any]],
+    gauge_list: List[Dict[str, Any]],
 ) -> Tuple[Optional[pl.DataFrame], pl.DataFrame]:
     """
     Retrieve river gauge data with caching and refresh logic.
@@ -820,8 +820,8 @@ def get_kayaking_levels(
     return kayaking_levels
 
 def get_kayaking_levels_pivot(
-kayaking_levels: pl.DataFrame,
-flow_unit: str,
+    kayaking_levels: pl.DataFrame,
+    flow_unit: str,
 ) -> pl.DataFrame:
     """
     Reshape derived kayaking section data into a long-format DataFrame.
@@ -877,9 +877,9 @@ flow_unit: str,
  )
 
 def get_kayaking_levels_range(
-kayaking_levels_cfs: pl.DataFrame,
-kayaking_levels_ft: pl.DataFrame,
-section_df: pl.DataFrame,
+    kayaking_levels_cfs: pl.DataFrame,
+    kayaking_levels_ft: pl.DataFrame,
+    section_df: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Combine derived kayaking section levels with section thresholds and boat ranges.

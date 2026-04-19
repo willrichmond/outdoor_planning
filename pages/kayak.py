@@ -33,9 +33,9 @@ def load_static_data()-> Tuple[pl.DataFrame, List[Dict[str, Any]], pl.DataFrame]
 
 @st.cache_data(ttl=3600)
 def run_river_flow_apis(
-gauge_list: List[Dict[str, Any]],
-section_df: pl.DataFrame,
-river_df: pl.DataFrame,
+    gauge_list: List[Dict[str, Any]],
+    section_df: pl.DataFrame,
+    river_df: pl.DataFrame,
 ) -> Tuple[pd.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
     Execute the full river flow data pipeline and cache results.
