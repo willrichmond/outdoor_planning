@@ -1252,7 +1252,7 @@ def get_current_river_levels(
         .sort("rank", "river_level", descending=[False, True])
         .drop("rank")
         .select(
-            "river_name",
+            # "river_name", # Dropping due to mobile view
             "sections",
             "river_level",
             "flow_range",
