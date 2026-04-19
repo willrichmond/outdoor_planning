@@ -72,22 +72,20 @@ with tab_forecast:
     st.dataframe(section_df)
     st.dataframe(kayaking_levels_range)
 
-#     kayaking_levels_filtered = (
-#         kayaking_levels
-#         .unpivot(
-#         index=['mountain_time','data_type'],
-#         on=[x for x in kayaking_levels.columns if x not in ('mountain_time', 'data_type')],
-#         variable_name="section",
-#         value_name="flow"
-#         )
-#         .filter(pl.col("section").is_in(section_options))
-#     )
+    kayaking_levels_filtered = (
+        kayaking_levels_range
+        .lazy()
+        .select('section_name','mountain_time','river_level','flow_type')
+        .filter(pl.col("section_name").is_in(section_options))
+        .with_columns(section_name=pl.when(pl.col('flow_type')=='standard').then(pl.col('section_name')).otherwise(pl.col('section_name') + ' (Max)'))
+        .collect()
+    )
 
-#     st.line_chart(kayaking_levels_filtered,
-#                   x="mountain_time",
-#                   y="flow", color="section",
-#                   width="stretch",
-#                   height=500)
+    st.line_chart(kayaking_levels_filtered,
+                  x="mountain_time",
+                  y="flow", color="section",
+                  width="stretch",
+                  height=500)
 
 with tab_river_details:
     st.dataframe(river_gauge_data)
