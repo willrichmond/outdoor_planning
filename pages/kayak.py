@@ -10,7 +10,7 @@ def load_static_data():
 
 
 @st.cache_data(ttl=3600)
-def run_river_flow_apis(gauge_list,section_df):
+def run_river_flow_apis(gauge_list,section_df,river_df):
     river_gauge_data= get_river_gauge_data(gauge_list)
     clean_gauge_data = get_clean_gauge_data(river_gauge_data)
     kayaking_levels_cfs= get_kayaking_levels(
@@ -23,7 +23,7 @@ def run_river_flow_apis(gauge_list,section_df):
 
     kayaking_levels_range = get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
 
-    kayaking_levels_current = get_current_river_levels(kayaking_levels_range)
+    kayaking_levels_current = get_current_river_levels(kayaking_levels_range,river_df)
 
     return  river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current
 
@@ -32,7 +32,7 @@ def run_river_flow_apis(gauge_list,section_df):
 # Data
 section_df, gauge_list, river_df = load_static_data()
 with st.spinner("Fetching river levels..."):
-    river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df)
+    river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df,river_df)
 
 def color_flow_range(row):
     colors = {

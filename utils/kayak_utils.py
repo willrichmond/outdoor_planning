@@ -494,6 +494,7 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
         pl.concat([kayaking_levels_ft_pivot, kayaking_levels_cfs_pivot])
         .lazy()
         .join(section_df.lazy().select('section_id',
+                                       'river_id',
                                         'section_name',
                                         'flow_unit',
                                         'min_level',
@@ -550,12 +551,12 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
     return kayaking_levels_range
 
 
-def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFrame:
+def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl.DataFrame:
 
     kayaking_current = (
         kayaking_levels_range
         .lazy()
-        .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range','flow_unit')
+        .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range','flow_unit','river_id')
         .filter(pl.col("data_type") == "observed")
         .sort(pl.col("mountain_time"))
         .unique(subset=['section_name','flow_type',], keep="last")
@@ -568,14 +569,14 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFram
 
     kayaking_current_pivot_river_level = (
         kayaking_current
-        .pivot(index='section_name',on='flow_type',values=['river_level',])
+        .pivot(index=['section_name','river_id'],on='flow_type',values=['river_level',])
         .rename({'standard':'river_level','max':'river_level_max'})
         .sort('section_name')
     )
 
     kayaking_current_pivot_flow_range = (
         kayaking_current
-        .pivot(index='section_name',on='flow_type',values=['flow_range',])
+        .pivot(index=['section_name','river_id'],on='flow_type',values=['flow_range',])
         .rename({'standard':'flow_range','max':'flow_range_max'})
         .sort('section_name')
     )
@@ -583,6 +584,7 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFram
     kayaking_current_pivot=(
         kayaking_current_pivot_river_level
         .join(kayaking_current_pivot_flow_range, on='section_name',)
+        .join(river_df,on='river_id',how='left')
 
     )
 
