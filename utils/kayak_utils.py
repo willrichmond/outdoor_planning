@@ -5,7 +5,7 @@ import requests
 import io
 from zoneinfo import ZoneInfo
 from datetime import datetime
-from typing import Any, Dict, List, Optional,Literal, Tuple
+from typing import Any, Dict, List, Optional,Literal, Tuple, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -111,8 +111,52 @@ gauge_dict: Dict[str, Any],
     gauge_run_dict.update({'rows': len(noaa_flow_forecast_rows),'error': None,})
     return noaa_flow_forecast_rows,gauge_run_dict
 
-def get_usgs_observed_flow(gauge_dict):
-    # https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html#/latest-daily/describeLatest-dailyCollection
+def get_usgs_observed_flow(
+gauge_dict: Dict[str, Any],
+) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
+    """
+    Fetch observed flow and stage data from the USGS Water Data API.
+
+    Calls the USGS OGC API to retrieve recent observed flow (cfs) and stage (ft)
+    measurements for a given gauge over a specified time window (last 24 hours).
+    The function reshapes parameter-based records into a time-indexed format.
+
+    Args:
+        gauge_dict: Dictionary containing gauge metadata with required keys:
+            - 'gauge_id' (str | int): Internal identifier for the gauge.
+            - 'gauge_name' (str): Human-readable name of the gauge.
+            - 'waterdata_usgs_identifier' (str): USGS monitoring location ID.
+
+    Returns:
+        A tuple containing:
+            - List of dictionaries (or None if failure/empty):
+                Each dictionary represents an observed data point with keys:
+                - 'gauge_name' (str)
+                - 'gauge_id' (str | int)
+                - 'source' (str): Always 'usgs'
+                - 'data_type' (str): Always 'observed'
+                - 'time' (str): ISO timestamp
+                - 'flow_cfs' (float | None): Flow in cubic feet per second
+                - 'stage_ft' (float | None): Stage in feet
+            - gauge_run_dict (dict):
+                Metadata about the API call including:
+                - 'gauge_name' (str)
+                - 'identifier' (str)
+                - 'source' (str)
+                - 'data_type' (str)
+                - 'rows' (int): Number of rows returned
+                - 'error' (str | None): Error message if failed
+
+    Notes:
+        - Parameter codes:
+            - '00060' → discharge (flow_cfs)
+            - '00065' → gage height (stage_ft)
+        - Data is requested for the past 24 hours using ISO 8601 duration ("PT24H").
+        - Returns (None, gauge_run_dict) if the request fails or returns no data.
+        - API documentation:
+        https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html#/latest-daily/describeLatest-dailyCollection
+    """
+
     gauge_id = gauge_dict['gauge_id']
     gauge_name = gauge_dict['gauge_name']
     usgs_id = gauge_dict['waterdata_usgs_identifier']
@@ -199,8 +243,55 @@ def get_usgs_observed_flow(gauge_dict):
 
     return usgs_observed_flow_rows,gauge_run_dict
 
-def get_bureau_reclamation_observed_flow(gauge_dict):
-    # https://www.usbr.gov/pn/hydromet/using_dfcgi.html
+def get_bureau_reclamation_observed_flow(
+gauge_dict: Dict[str, Any],
+) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
+    """
+    Fetch observed flow and stage data from the Bureau of Reclamation Hydromet API.
+
+    Calls the Bureau of Reclamation `instant.pl` endpoint to retrieve recent
+    observed flow (cfs) and stage (ft) measurements for a given gauge over the
+    past 24 hours. The returned CSV data is parsed into a Polars DataFrame,
+    cleaned, filtered to on-the-hour timestamps, and converted to a list of
+    dictionaries.
+
+    Args:
+        gauge_dict: Dictionary containing gauge metadata with required keys:
+            - 'gauge_id' (str | int): Internal identifier for the gauge.
+            - 'gauge_name' (str): Human-readable name of the gauge.
+            - 'bureau_reclamation_identifier' (str): Bureau of Reclamation site
+            identifier used in the API request.
+
+    Returns:
+        A tuple containing:
+            - List of dictionaries (or None if failure or empty result):
+                Each dictionary represents an observed data point with keys:
+                - 'gauge_name' (str)
+                - 'gauge_id' (str | int)
+                - 'source' (str): Always 'bureau_reclamation'
+                - 'data_type' (str): Always 'observed'
+                - 'mountain_time' (datetime): Observation timestamp
+                - 'flow_cfs' (float | None): Flow in cubic feet per second
+                - 'stage_ft' (float | None): Stage in feet
+            - gauge_run_dict (dict):
+                Metadata about the API call including:
+                - 'gauge_name' (str)
+                - 'identifier' (str)
+                - 'source' (str)
+                - 'data_type' (str)
+                - 'rows' (int): Number of rows returned
+                - 'error' (str | None): Error message if failed
+
+    Notes:
+        - The API returns CSV data from the `instant.pl` endpoint.
+        - Flow uses the `Q` parameter and stage uses the `GH` parameter.
+        - Timestamps are parsed using the format '%Y-%m-%d %H:%M'.
+        - Only rows where the timestamp is exactly on the hour are retained.
+        - Returns (None, gauge_run_dict) if the request fails or returns no data.
+        - API documentation:
+        https://www.usbr.gov/pn/hydromet/using_dfcgi.html
+    """
+
     gauge_id = gauge_dict['gauge_id']
     gauge_name = gauge_dict['gauge_name']
     bureau_reclamation_id = gauge_dict['bureau_reclamation_identifier']
@@ -255,7 +346,35 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
     gauge_run_dict.update({'rows': len(bureau_reclamation_observed_flow),'error': None,})
     return bureau_reclamation_observed_flow,gauge_run_dict
 
-def clean_usgs_noaa_data(gauge_data):
+def clean_usgs_noaa_data(gauge_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Clean and normalize USGS and NOAA time series data.
+
+    Converts UTC timestamp strings to timezone-aware datetimes, truncates them
+    to the nearest minute, filters to hourly observations only, converts the
+    timestamps to Mountain Time, removes timezone information, and returns the
+    cleaned records as a list of dictionaries.
+
+    Args:
+        gauge_data: List of dictionaries containing USGS and NOAA data records.
+            Each record is expected to include a 'time' field as an ISO 8601
+            timestamp string ending in 'Z' or containing a UTC offset.
+
+    Returns:
+        A list of dictionaries with cleaned timestamps. Each output record
+        includes all original fields except:
+            - 'time' is removed
+            - 'mountain_time' is added as a timezone-naive datetime in
+            America/Denver local time
+
+    Notes:
+        - Timestamp strings ending in 'Z' are normalized to '+00:00' before
+        parsing.
+        - Timestamps are truncated to the nearest minute before filtering.
+        - Only rows where the minute value is 0 are retained.
+        - The returned 'mountain_time' is timezone-naive after conversion to
+        America/Denver.
+    """
     return (
         pl.DataFrame(gauge_data)
         # Converting to datetime
@@ -275,9 +394,63 @@ def clean_usgs_noaa_data(gauge_data):
         .to_dicts()
         )
 
-def process_gauge(gauge_loop):
-    results = []
-    run_details = []
+def process_gauge(
+gauge_loop: Dict[str, Any],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Process a single gauge by fetching observed and forecast data.
+
+    Routes the gauge to the appropriate observed data source (USGS or Bureau
+    of Reclamation), optionally cleans the data, and combines it with NOAA
+    forecast data. All results are aggregated into a unified list of records,
+    along with metadata describing each API call.
+
+    Args:
+        gauge_loop: Dictionary containing gauge configuration and metadata
+            with required keys:
+            - 'gauge_name' (str): Human-readable name of the gauge.
+            - 'observed_api' (str): Source for observed data. Expected values:
+                - 'waterdata_usgs'
+                - 'bureau_reclamation'
+            - Additional keys required by downstream functions:
+                - 'gauge_id'
+                - 'waterdata_usgs_identifier' (if USGS)
+                - 'bureau_reclamation_identifier' (if Bureau)
+                - 'noaa_forecast_identifier' (for forecast)
+
+    Returns:
+        A tuple containing:
+            - results (list of dict):
+                Combined list of observed and forecast records. Each record
+                includes:
+                - 'gauge_name'
+                - 'gauge_id'
+                - 'source'
+                - 'data_type'
+                - 'mountain_time' (datetime)
+                - 'flow_cfs' (float | None)
+                - 'stage_ft' (float | None)
+            - run_details (list of dict):
+                Metadata for each API call performed (observed + forecast),
+                including:
+                - 'gauge_name'
+                - 'identifier'
+                - 'source'
+                - 'data_type'
+                - 'rows'
+                - 'error'
+
+    Notes:
+        - USGS and NOAA data are passed through `clean_usgs_noaa_data` to
+        normalize timestamps and filter to hourly intervals.
+        - Bureau of Reclamation data is assumed to already be cleaned and
+        filtered to hourly timestamps.
+        - Forecast data is always fetched from NOAA regardless of observed
+        source.
+        - Unknown observed_api values are logged and skipped.
+    """
+    results: List[Dict[str, Any]] = []
+    run_details: List[Dict[str, Any]] = []
 
     if gauge_loop['observed_api'] == 'waterdata_usgs':
         observed_data, gauge_run_detail = get_usgs_observed_flow(gauge_loop)
@@ -302,7 +475,55 @@ def process_gauge(gauge_loop):
     return results, run_details
 
 
-def fetch_all_gauge_data(gauge_list):
+def fetch_all_gauge_data(
+gauge_list: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Fetch observed and forecast data for multiple gauges in parallel.
+
+    Executes `process_gauge` concurrently across a list of gauge configurations,
+    aggregating both the resulting time series data and metadata about each API
+    call. Errors for individual gauges are logged but do not interrupt the
+    overall process.
+
+    Args:
+        gauge_list: List of dictionaries containing gauge configurations. Each
+            dictionary must include the required keys for `process_gauge`, such
+            as:
+            - 'gauge_name'
+            - 'observed_api'
+            - 'gauge_id'
+            - 'waterdata_usgs_identifier' (if applicable)
+            - 'bureau_reclamation_identifier' (if applicable)
+            - 'noaa_forecast_identifier'
+
+    Returns:
+        A tuple containing:
+            - gauge_data_all (list of dict):
+                Combined list of observed and forecast records across all
+                gauges. Each record includes:
+                - 'gauge_name'
+                - 'gauge_id'
+                - 'source'
+                - 'data_type'
+                - 'mountain_time' (datetime)
+                - 'flow_cfs' (float | None)
+                - 'stage_ft' (float | None)
+            - gauge_run_details (list of dict):
+                Aggregated metadata for each API call performed, including:
+                - 'gauge_name'
+                - 'identifier'
+                - 'source'
+                - 'data_type'
+                - 'rows'
+                - 'error'
+
+    Notes:
+        - Uses a ThreadPoolExecutor with a maximum of 4 concurrent workers.
+        - Each gauge is processed independently via `process_gauge`.
+        - Failures for individual gauges are logged and skipped without raising.
+        - Order of results is not guaranteed due to parallel execution.
+    """
     gauge_data_all = []
     gauge_run_details = []
 
@@ -319,7 +540,55 @@ def fetch_all_gauge_data(gauge_list):
     return gauge_data_all, gauge_run_details
 
 
-def get_river_gauge_data(gauge_list):
+def get_river_gauge_data(
+gauge_list: List[Dict[str, Any]],
+) -> Tuple[Optional[pl.DataFrame], pl.DataFrame]:
+    """
+    Retrieve river gauge data with caching and refresh logic.
+
+    Attempts to load previously stored gauge data and determines whether it is
+    recent enough (within 60 minutes) to reuse. If cached data is stale or
+    unavailable, new data is fetched via `fetch_all_gauge_data`, persisted to
+    disk, and returned.
+
+    Args:
+        gauge_list: List of dictionaries containing gauge configurations. Each
+            dictionary must include the required keys for downstream processing
+            (see `process_gauge` and `fetch_all_gauge_data`).
+
+    Returns:
+        A tuple containing:
+            - gauge_data_all (pl.DataFrame | None):
+                DataFrame of observed and forecast gauge data with columns:
+                - 'gauge_name'
+                - 'gauge_id'
+                - 'source'
+                - 'data_type'
+                - 'mountain_time' (datetime)
+                - 'flow_cfs' (float | None)
+                - 'stage_ft' (float | None)
+                - 'run_time' (datetime): Timestamp of data fetch
+                Returns None if no data was fetched.
+            - gauge_run_details (pl.DataFrame):
+                DataFrame containing metadata for each API call, including:
+                - 'gauge_name'
+                - 'identifier'
+                - 'source'
+                - 'data_type'
+                - 'rows'
+                - 'error'
+                - 'run_time' (datetime)
+
+    Notes:
+        - Cached data is stored in:
+            - 'data/kayak/gauge_data_all.parquet'
+            - 'data/kayak/gauge_run_details.parquet'
+        - Cache is considered valid if it is ≤ 60 minutes old.
+        - All timestamps are generated in America/Denver and stored as
+        timezone-naive datetimes.
+        - If cached data is valid, no API calls are made.
+        - If fetching fails or returns no data, gauge_data_all may be None.
+    """
 
     logger.info('Checking for existing gauge data...')
 
@@ -361,8 +630,6 @@ def get_river_gauge_data(gauge_list):
     gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet')
 
     return gauge_data_all, gauge_run_details
-
-
 
 
 def get_clean_gauge_data(df: pl.DataFrame) -> pl.DataFrame:
@@ -440,50 +707,45 @@ def get_kayaking_levels(
     value_type: Literal["flow_cfs", "stage_ft"],
 ) -> pl.DataFrame:
     """
-    Derive kayaking-relevant flow metrics for river sections.
+    Derive kayaking section levels from cleaned gauge observations and forecasts.
 
-    This function reshapes cleaned gauge data into a wide format and
-    computes derived flow values for specific whitewater sections using
-    combinations of upstream and downstream USGS gauges.
-
-    Processing steps:
-    - Pivot gauge data to wide format with one column per gauge.
-    - Sort by time and data type (actual vs forecast).
-    - Forward-fill missing values across time.
-    - Compute section-level flows using predefined gauge relationships.
-    - Drop raw gauge columns after deriving section features.
+    Reshapes gauge data into a wide time-series format keyed by `gauge_id`,
+    fills missing values across time, replaces any remaining null gauge values
+    with 0, and computes section-level derived values used for kayaking
+    conditions. The resulting DataFrame contains one row per
+    `mountain_time`/`data_type` combination and one column per derived section.
 
     Args:
-        df_clean: A cleaned Polars DataFrame (output of
-            ``clean_gauge_data``). Expected columns:
-            - mountain_time (datetime)
-            - data_type (str): "actual" or "forecast"
-            - gauge_name (str)
-            - flow_cfs or stage_ft (depending on ``value_type``)
-
-        value_type: The value column to pivot and compute from.
-            Typically:
-            - "flow_cfs" for discharge-based calculations
-            - "stage_ft" for stage-based calculations
+        df_clean: Cleaned gauge data with, at minimum, the following columns:
+            - 'mountain_time' (datetime): Local observation or forecast time
+            - 'data_type' (str): Data category such as 'observed' or 'forecast'
+            - 'gauge_id' (str | int): Gauge identifier
+            - 'flow_cfs' (float | None): Flow in cubic feet per second
+            - 'stage_ft' (float | None): Stage in feet
+        value_type: Gauge metric to pivot and derive section values from.
+            Must be one of:
+            - 'flow_cfs'
+            - 'stage_ft'
 
     Returns:
-        pl.DataFrame: A wide-format DataFrame indexed by
-        ``mountain_time`` and ``data_type`` containing derived
-        section-level flow values for:
-            - Payette system (main, lower, gutter, NF, SF, etc.)
-            - Salmon system
-            - Lochsa
-            - Boise
-            - Owyhee
-            - Snake (Murtaugh)
+        A Polars DataFrame with:
+            - 'mountain_time'
+            - 'data_type'
+            - Derived section columns such as:
+                - 'section_id_1'
+                - 'section_id_2'
+                - ...
+                - 'section_id_26'
+                - 'section_id_8_max'
+                - 'section_id_23_max'
 
     Notes:
-        - Forward filling assumes monotonic time ordering.
-        - Section calculations are domain-specific and assume:
-            - Additive flows where tributaries combine
-            - Subtractive flows where isolating forks
-        - Gauge names must exactly match expected strings.
-        - Missing gauge columns will raise a runtime error.
+        - Gauge values are pivoted into columns named by `gauge_id`.
+        - Missing values are first forward-filled, then backward-filled.
+        - Any remaining null values in gauge columns '1' through '13' are
+        replaced with 0 before section calculations.
+        - Several section values are direct copies of a single gauge, while
+        others are arithmetic combinations of multiple gauges.
     """
     kayaking_levels = (
     df_clean
@@ -548,7 +810,7 @@ def get_kayaking_levels(
         section_id_23 = pl.col('4') + pl.col('5'),
         section_id_23_max = pl.col('2') - pl.col('3') - pl.col('6'),
 
-        section_id_25 = pl.lit('13'),
+        section_id_25 = pl.col('13'),
         section_id_26 = pl.col('6'),
     )
     .drop(
@@ -557,7 +819,50 @@ def get_kayaking_levels(
     )
     return kayaking_levels
 
-def get_kayaking_levels_pivot(kayaking_levels,flow_unit):
+def get_kayaking_levels_pivot(
+kayaking_levels: pl.DataFrame,
+flow_unit: str,
+) -> pl.DataFrame:
+    """
+    Reshape derived kayaking section data into a long-format DataFrame.
+
+    Converts the wide section-level output from `get_kayaking_levels` into a
+    normalized long format with one row per
+    `mountain_time`/`data_type`/`section` combination. It also derives a
+    numeric `section_id`, classifies each row as either a standard or max flow
+    type, adds the provided flow unit, and casts river levels to Float32.
+
+    Args:
+        kayaking_levels: Wide-format Polars DataFrame produced by
+            `get_kayaking_levels`. Expected to contain:
+            - 'mountain_time' (datetime)
+            - 'data_type' (str)
+            - One or more section columns named like:
+                - 'section_id_1'
+                - 'section_id_8_max'
+                - 'section_id_23'
+                - etc.
+        flow_unit: Unit label to attach to every row, such as:
+            - 'flow_cfs'
+            - 'stage_ft'
+
+    Returns:
+        A Polars DataFrame in long format with columns:
+            - 'mountain_time' (datetime)
+            - 'data_type' (str)
+            - 'river_level' (Float32)
+            - 'section_id' (Int32)
+            - 'flow_type' (str): 'standard' or 'max'
+            - 'flow_unit' (str)
+
+    Notes:
+        - Section column names are parsed to derive `section_id`.
+        - Columns ending in '_max' are labeled with `flow_type='max'`;
+        all others are labeled as `flow_type='standard'`.
+        - The original section column name is dropped after parsing.
+        - This function eagerly returns a collected DataFrame even though it
+        uses a lazy step internally.
+    """
     return (kayaking_levels
  .unpivot(index=['mountain_time','data_type',],variable_name='section',value_name='river_level')
  .lazy()
@@ -571,7 +876,71 @@ def get_kayaking_levels_pivot(kayaking_levels,flow_unit):
  .collect()
  )
 
-def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df):
+def get_kayaking_levels_range(
+kayaking_levels_cfs: pl.DataFrame,
+kayaking_levels_ft: pl.DataFrame,
+section_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """
+    Combine derived kayaking section levels with section thresholds and boat ranges.
+
+    Converts both flow-based and stage-based section outputs into a normalized
+    long format, combines them, joins them to section metadata, and derives:
+    flow range labels and boat-type suitability flags for each section and time.
+
+    Args:
+        kayaking_levels_cfs: Wide-format Polars DataFrame of derived section
+            levels in cubic feet per second, typically returned by
+            `get_kayaking_levels(..., value_type="flow_cfs")`.
+        kayaking_levels_ft: Wide-format Polars DataFrame of derived section
+            levels in feet, typically returned by
+            `get_kayaking_levels(..., value_type="stage_ft")`.
+        section_df: Polars DataFrame containing section metadata and threshold
+            definitions. Expected columns include:
+            - 'section_id' (int)
+            - 'river_id' (int)
+            - 'section_name' (str)
+            - 'flow_unit' (str)
+            - 'min_level' (float | None)
+            - 'medium_level' (float | None)
+            - 'high_level' (float | None)
+            - 'max_level' (float | None)
+            - 'min_creek_boat' (float | None)
+            - 'max_creek_boat' (float | None)
+            - 'min_half_slice' (float | None)
+            - 'max_half_slice' (float | None)
+            - 'min_play_boat' (float | None)
+            - 'max_play_boat' (float | None)
+
+    Returns:
+        A Polars DataFrame with one row per
+        `mountain_time`/`data_type`/`section_id`/`flow_unit` combination,
+        including:
+            - 'mountain_time' (datetime)
+            - 'data_type' (str)
+            - 'river_level' (float)
+            - 'section_id' (int)
+            - 'flow_type' (str): 'standard' or 'max'
+            - 'flow_unit' (str): 'cfs' or 'feet'
+            - 'river_id' (int)
+            - 'section_name' (str)
+            - 'flow_range' (str): One of
+                - 'Too Low'
+                - 'Low'
+                - 'Medium'
+                - 'High'
+                - 'Too High'
+            - 'run_creekboat' (int): 1 if runnable for creek boat else 0
+            - 'run_halfslice' (int): 1 if runnable for half slice else 0
+            - 'run_playboat' (int): 1 if runnable for playboat else 0
+
+    Notes:
+        - Flow ranges are derived by comparing `river_level` against section
+        thresholds in ascending order.
+        - Boat flags are 0 when the corresponding min/max thresholds are null.
+        - `is_between` is inclusive by default in Polars.
+        - Threshold columns used for derivation are dropped from the output.
+    """
     kayaking_levels_ft_pivot = get_kayaking_levels_pivot(kayaking_levels=kayaking_levels_ft,flow_unit='feet')
     kayaking_levels_cfs_pivot = get_kayaking_levels_pivot(kayaking_levels=kayaking_levels_cfs,flow_unit='cfs')
 
@@ -636,7 +1005,51 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
     return kayaking_levels_range
 
 
-def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl.DataFrame:
+def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df:pl.DataFrame) -> pd.DataFrame:
+    """
+    Generate current river conditions for Streamlit display.
+
+    Filters observed data to the most recent value per section and flow type,
+    formats river levels, pivots standard and max flows into columns, joins
+    river metadata, ranks flow conditions, aggregates sections per river, and
+    returns a pandas DataFrame suitable for styled display.
+
+    Args:
+        kayaking_levels_range: Polars DataFrame containing enriched section-level
+            time series data with columns such as:
+            - 'mountain_time' (datetime)
+            - 'data_type' (str): 'observed' or 'forecast'
+            - 'section_name' (str)
+            - 'flow_type' (str): 'standard' or 'max'
+            - 'river_level' (float)
+            - 'flow_range' (str)
+            - 'flow_unit' (str)
+            - 'river_id' (int)
+        river_df: Polars DataFrame containing river metadata with at least:
+            - 'river_id' (int)
+            - 'river_name' (str)
+
+    Returns:
+        A pandas DataFrame with aggregated river-level summaries including:
+            - 'river_name' (str)
+            - 'sections' (str): Comma-separated section names
+            - 'river_level' (str): Formatted current level (standard)
+            - 'flow_range' (str)
+            - 'river_level_max' (str): Formatted max level
+            - 'flow_range_max' (str)
+
+    Notes:
+        - Only 'observed' data is used.
+        - Latest values per ('section_name', 'flow_type') are retained.
+        - River levels:
+            - Rounded to 2 decimals for 'feet'
+            - Ceiled and rounded to 0 decimals for 'cfs'
+        - Flow range ranking is used for sorting:
+            - 'High' (1), 'Medium' (2), 'Low' (3), 'Too High' (4), 'Too Low' (5)
+        - Sections are aggregated per river and sorted alphabetically.
+        - Final output is converted to pandas to support Streamlit styling.
+        - Assumes `format_level_current` is defined and formats numeric levels.
+    """
 
     kayaking_current_for_streamlit = (
         kayaking_levels_range
@@ -687,7 +1100,7 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
 
     )
 
-
+    # Converting to pandas for styling options in Streamlit
     kayaking_current_for_streamlit = kayaking_current_for_streamlit.to_pandas()
 
     for column in ['river_level','river_level_max']:
@@ -696,14 +1109,66 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
     return kayaking_current_for_streamlit
 
 
-def format_level_current(val):
+def format_level_current(val: Union[float, int, None]) -> str:
+    """
+    Format a numeric river level value for display.
+
+    Converts numeric values into a human-readable string with thousands
+    separators. Integer-equivalent values are displayed without decimal
+    places, while non-integer values are rounded to two decimal places.
+    Null or missing values are returned as an empty string.
+
+    Args:
+        val: Numeric value representing a river level. Can be a float, int,
+            or None/NaN.
+
+    Returns:
+        A formatted string:
+            - Empty string if value is null/NaN
+            - Integer string with commas if value is whole number
+            - Float string with 2 decimal places otherwise
+
+    Notes:
+        - Uses `pd.isna` to handle both None and NaN values.
+        - Assumes input is numeric or null; non-numeric inputs may raise.
+    """
     if pd.isna(val):
         return ''
     if val == int(val):
         return f"{int(val):,}"
     return f"{val:,.2f}"
 
-def get_color_flow_range(row):
+def get_color_flow_range(row: pd.Series) -> List[str]:
+    """
+    Generate cell-level background color styles based on flow range categories.
+
+    Maps `flow_range` and `flow_range_max` values to predefined background
+    colors and returns a list of style strings aligned with the row's columns.
+    Intended for use with pandas Styler `.apply(..., axis=1)`.
+
+    Args:
+        row: A pandas Series representing a single row of the DataFrame.
+            Expected to contain:
+            - 'flow_range' (str | None)
+            - 'flow_range_max' (str | None)
+            - 'river_level' (column to style)
+            - 'river_level_max' (column to style)
+
+    Returns:
+        A list of CSS style strings (one per column in the row), where:
+            - The 'river_level' column is styled based on 'flow_range'
+            - The 'river_level_max' column is styled based on 'flow_range_max'
+            - All other columns return an empty string
+
+    Notes:
+        - Color mapping:
+            - 'Too Low' / 'Too High' → red
+            - 'Low' → light blue
+            - 'Medium' → green
+            - 'High' → yellow
+        - Missing or unmapped values default to no styling.
+        - The returned list must match the length and order of `row.index`.
+    """
     colors = {
         'Too Low': 'background-color: #E74C3C',
         'Low': 'background-color: #89CFF0',
