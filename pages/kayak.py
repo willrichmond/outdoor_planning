@@ -83,7 +83,8 @@ with tab_forecast:
 
     st.line_chart(kayaking_levels_filtered,
                   x="mountain_time",
-                  y="flow", color="section",
+                  y="river_level",
+                  color="section_name",
                   width="stretch",
                   height=500)
 

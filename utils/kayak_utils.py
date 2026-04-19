@@ -510,7 +510,6 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
  'max_half_slice',
  'min_play_boat',
  'max_play_boat',
-  'flow_unit',
        )
     .collect()
 
@@ -524,11 +523,13 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFram
     kayaking_current = (
         kayaking_levels_range
         .lazy()
-        .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range')
+        .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range','flow_unit')
         .filter(pl.col("data_type") == "observed")
         .sort(pl.col("mountain_time"))
         .unique(subset=['section_name','flow_type',], keep="last")
-        .with_columns(river_level=pl.col('river_level').ceil().cast(pl.Int32))
+        .with_columns(river_level=pl.when(pl.col('flow_unit')=='feet').then(pl.col('river_level').round(2))
+                      .otherwise(pl.col('river_level').ceil().round(0))
+                      )
         .drop("mountain_time", "data_type")
         .collect()
     )
@@ -553,4 +554,4 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame) -> pl.DataFram
 
     )
 
-    return kayaking_current_pivot.to_pandas().astype({'river_level_max': 'Int32'})
+    return kayaking_current_pivot.to_pandas()
