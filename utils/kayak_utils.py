@@ -2,6 +2,7 @@ from utils.logger import logger
 import polars as pl
 import requests
 import io
+from datetime import datetime
 from typing import Any, Dict, List, Optional,Literal
 
 
@@ -243,6 +244,14 @@ def get_river_gauge_data(gauge_list):
 
     if not gauge_data_all:
         return None
+
+
+    gauge_data_all = (pl.DataFrame(gauge_data_all)
+                      .with_columns(run_time = datetime.now())
+                      )
+
+    gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
+
 
     return pl.DataFrame(gauge_data_all)
 
