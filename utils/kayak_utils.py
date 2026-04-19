@@ -1,5 +1,6 @@
 from utils.logger import logger
 import polars as pl
+import pandas as pd
 import requests
 import io
 from zoneinfo import ZoneInfo
@@ -563,7 +564,7 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
         .with_columns(river_level=pl.when(pl.col('flow_unit')=='feet').then(pl.col('river_level').round(2))
                       .otherwise(pl.col('river_level').ceil().round(0))
                       )
-        .drop("mountain_time", "data_type")
+        .drop("mountain_time", "data_type",'flow_unit',)
         .collect()
     )
 
@@ -571,21 +572,65 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
         kayaking_current
         .pivot(index=['section_name','river_id'],on='flow_type',values=['river_level',])
         .rename({'standard':'river_level','max':'river_level_max'})
-        .sort('section_name')
     )
 
     kayaking_current_pivot_flow_range = (
         kayaking_current
-        .pivot(index=['section_name','river_id'],on='flow_type',values=['flow_range',])
+        .pivot(index=['section_name',],on='flow_type',values=['flow_range',])
         .rename({'standard':'flow_range','max':'flow_range_max'})
-        .sort('section_name')
     )
 
     kayaking_current_pivot=(
         kayaking_current_pivot_river_level
         .join(kayaking_current_pivot_flow_range, on='section_name',)
-        .join(river_df,on='river_id',how='left')
+        .join(river_df,on='river_id')
+        .with_columns(rank=pl.col('flow_range').replace_strict({
+            'Too Low': 5,
+            'Low': 3,
+            'Medium': 2,
+            'High': 1,
+            'Too High': 4,
+        }))
+        .sort(['rank','river_name','section_name'],)
+        .drop('river_id',)
+        .group_by("river_name", "river_level", "flow_range", "river_level_max", "flow_range_max", "rank")
+    .agg(
+        sections=pl.col("section_name").sort().implode().list.join(", ")
+    )
+    .sort("rank", "river_level", descending=[False, True])
+    .drop("rank")
+    .select("river_name", "sections", "river_level", "flow_range", "river_level_max", "flow_range_max")
 
     )
 
-    return kayaking_current_pivot.to_pandas()
+
+    kayaking_current_pivot = kayaking_current_pivot.to_pandas()
+
+    for column in ['river_level','river_level_max']:
+         kayaking_current_pivot[column] = kayaking_current_pivot[column].apply(format_level_current)
+
+    return kayaking_current_pivot
+
+
+def format_level_current(val):
+    if pd.isna(val):
+        return ''
+    if val == int(val):
+        return f"{int(val):,}"
+    return f"{val:,.2f}"
+
+def get_color_flow_range(row):
+    colors = {
+        'Too Low': 'background-color: #E74C3C',
+        'Low': 'background-color: #89CFF0',
+        'Medium': 'background-color: #2ECC71',
+        'High': 'background-color: #FFEA00',
+        'Too High': 'background-color: #E74C3C',
+        None: ''
+    }
+    color_standard = colors.get(row['flow_range'], '')
+    color_max = colors.get(row['flow_range_max'], '')
+
+    return [color_standard if col == 'river_level' else color_max if col == 'river_level_max' else '' for col in row.index]
+
+

@@ -1,7 +1,7 @@
 import streamlit as st
 import polars as pl
 from utils.logger import logger
-from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_kayaking_levels_pivot
+from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_kayaking_levels_pivot,get_color_flow_range
 from data.kayak.kayak_static import section_list, gauge_list,river_list
 
 @st.cache_data(ttl=3600)
@@ -34,19 +34,6 @@ section_df, gauge_list, river_df = load_static_data()
 with st.spinner("Fetching river levels..."):
     river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df,river_df)
 
-def color_flow_range(row):
-    colors = {
-        'Too Low': 'background-color: #d4e6f1',
-        'Low': 'background-color: #a9cce3',
-        'Medium': 'background-color: #82e0aa',
-        'High': 'background-color: #f0b27a',
-        'Too High': 'background-color: #ec7063',
-        None: ''
-    }
-    color_standard = colors.get(row['flow_range'], '')
-    color_max = colors.get(row['flow_range_max'], '')
-
-    return [color_standard if col == 'river_level' else color_max if col == 'river_level_max' else '' for col in row.index]
 
 st.title("📊 Kayaking")
 
@@ -56,7 +43,7 @@ tab_current, tab_forecast, tab_river_details, tab_gauges = st.tabs(["Current", "
 
 with tab_current:
     st.subheader("Current River Levels")
-    st.dataframe(kayaking_levels_current.style.apply(color_flow_range, axis=1),column_config={
+    st.dataframe(kayaking_levels_current.style.apply(get_color_flow_range, axis=1),column_config={
         'flow_range': None,
         'flow_range_max': None,
     })
