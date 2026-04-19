@@ -32,7 +32,6 @@ def run_river_flow_apis(gauge_list,section_df):
 # Data
 section_df, gauge_list, river_df = load_static_data()
 with st.spinner("Fetching river levels..."):
-    #kayaking_levels, current_river_levels,more_river_gauge_data = run_apis()
     river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df)
 
 def color_flow_range(row):
@@ -50,29 +49,28 @@ def color_flow_range(row):
     return [color_standard if col == 'river_level' else color_max if col == 'river_level_max' else '' for col in row.index]
 
 st.title("📊 Kayaking")
-st.dataframe(river_gauge_data)
-st.dataframe(clean_gauge_data)
-st.dataframe(kayaking_levels_cfs)
-st.dataframe(kayaking_levels_ft)
-st.dataframe(kayaking_levels_range)
-st.dataframe(kayaking_levels_current.style.apply(color_flow_range, axis=1),column_config={
+
+
+# Tabs
+tab_current, tab_forecast, tab_river_details, tab_gauges = st.tabs(["Current", "Forecast","River Details",'Gauges'])
+
+with tab_current:
+    st.subheader("Current River Levels")
+    st.dataframe(kayaking_levels_current.style.apply(color_flow_range, axis=1),column_config={
         'flow_range': None,
         'flow_range_max': None,
     })
-# Tabs
-# tab_current, tab_forecast, tab_river_details = st.tabs(["Current", "Forecast","River Details"])
 
-# with tab_current:
-#     st.subheader("Current River Levels")
-#     st.dataframe(current_river_levels)
-# with tab_forecast:
-#     st.header("Forecast")
+with tab_forecast:
+    st.header("Forecast")
 
-#     section_options = st.multiselect(
-#     "Pick Your Rivers!",
-#     ['main_payette', 'lower_payette', 'lower_payette_climax', 'payette_gutter', 'nf_payette_warm_up', 'sf_payette_grandjean', 'sf_payette_kirkham', 'sf_payette_canyon_low', 'sf_payette_canyon_high', 'sf_payette_staircase', 'deadwood', 'salmon_riggins', 'salmon_mill_wave', 'little_salmon', 'upper_lochsa', 'lower_lochsa', 'boise_ww_park', 'boise_barber_park', 'owyhee_three_forks', 'mf_salmon', 'murtaugh'],
-#     default=['sf_payette_canyon_low', 'sf_payette_canyon_high', 'sf_payette_staircase',],
-# )
+    section_options = st.multiselect(
+    "Pick Your Rivers!",
+    options=section_df['section_name'].to_list(),
+    default=['Staircase','The Canyon'],
+)
+    st.dataframe(section_df)
+    st.dataframe(kayaking_levels_range)
 
 #     kayaking_levels_filtered = (
 #         kayaking_levels
@@ -91,11 +89,12 @@ st.dataframe(kayaking_levels_current.style.apply(color_flow_range, axis=1),colum
 #                   width="stretch",
 #                   height=500)
 
-# with tab_river_details:
-#     st.header("River Details")
-#     st.subheader("Sections")
-#     st.dataframe(section_details)
-#     st.subheader("Gauges")
-#     st.dataframe(gauge_details)
-#     st.subheader("Rivers")
-#     st.dataframe(river_details)
+with tab_river_details:
+    st.dataframe(river_gauge_data)
+    st.dataframe(clean_gauge_data)
+    st.dataframe(kayaking_levels_cfs)
+    st.dataframe(kayaking_levels_ft)
+
+
+with tab_gauges:
+    st.dataframe(pl.DataFrame(gauge_list))
