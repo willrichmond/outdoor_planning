@@ -6,7 +6,6 @@ import io
 from zoneinfo import ZoneInfo
 from datetime import datetime
 from typing import Any, Dict, List, Optional,Literal
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_noaa_flow_forecast(gauge_dict):
@@ -233,50 +232,6 @@ def clean_usgs_noaa_data(gauge_data):
         .to_dicts()
         )
 
-def process_gauge(gauge_loop):
-    results = []
-    run_details = []
-
-    if gauge_loop['observed_api'] == 'waterdata_usgs':
-        observed_data, gauge_run_detail = get_usgs_observed_flow(gauge_loop)
-        run_details.append(gauge_run_detail)
-        if observed_data is not None:
-            results.extend(clean_usgs_noaa_data(observed_data))
-
-    elif gauge_loop['observed_api'] == 'bureau_reclamation':
-        observed_data, gauge_run_detail = get_bureau_reclamation_observed_flow(gauge_loop)
-        run_details.append(gauge_run_detail)
-        if observed_data is not None:
-            results.extend(observed_data)
-
-    else:
-        logger.info(f"⚠️ Unknown observed API for gauge {gauge_loop['gauge_name']}: {gauge_loop['observed_api']}")
-
-    forecast_data, gauge_run_detail = get_noaa_flow_forecast(gauge_loop)
-    run_details.append(gauge_run_detail)
-    if forecast_data is not None:
-        results.extend(clean_usgs_noaa_data(forecast_data))
-
-    return results, run_details
-
-
-def fetch_all_gauge_data(gauge_list):
-    gauge_data_all = []
-    gauge_run_details = []
-
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {executor.submit(process_gauge, g): g for g in gauge_list}
-        for future in as_completed(futures):
-            try:
-                results, run_details = future.result()
-                gauge_data_all.extend(results)
-                gauge_run_details.extend(run_details)
-            except Exception as e:
-                logger.info(f"❌ Error processing gauge {futures[future]['gauge_name']}: {e}")
-
-    return gauge_data_all, gauge_run_details
-
-
 def get_river_gauge_data(gauge_list):
 
     logger.info('Checking for existing gauge data...')
@@ -292,34 +247,71 @@ def get_river_gauge_data(gauge_list):
 
         if time_difference_minutes <= 60:
             logger.info(f"✅ Existing gauge data is recent ({time_difference_minutes:.1f} minutes old). Using cached data.")
-            return gauge_data_existing, gauge_run_details
+
+            return gauge_data_existing,gauge_run_details
+
         else:
-            logger.info(f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data.")
+             logger.info(f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data.")
 
     except Exception as e:
         logger.info(f"⚠️ No existing gauge data found or error reading file: {e}")
 
-    logger.info('Beginning to fetch river gauge data for all gauges...')
 
-    gauge_data_all, gauge_run_details = fetch_all_gauge_data(gauge_list)
 
-    gauge_run_details = (
-        pl.DataFrame(gauge_run_details)
-        .with_columns(run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
-    )
-    gauge_run_details.write_parquet('data/kayak/gauge_run_details.parquet')
+    logger.info('Beggining to fetch river gauge data for all gauges...')
+
+    gauge_data_all = []
+    gauge_run_details = []
+
+    for gauge_loop in gauge_list:
+        logger.info(f"Processing gauge: {gauge_loop['gauge_name']}")
+
+        if gauge_loop['observed_api'] == 'waterdata_usgs':
+            observed_data,gauge_run_detail = get_usgs_observed_flow(gauge_loop)
+
+            gauge_run_details.append(gauge_run_detail)
+
+
+            if observed_data is not None:
+                observed_data = clean_usgs_noaa_data(observed_data)
+                gauge_data_all.extend(observed_data)
+
+        elif gauge_loop['observed_api'] == 'bureau_reclamation':
+            observed_data,gauge_run_detail = get_bureau_reclamation_observed_flow(gauge_loop)
+
+            gauge_run_details.append(gauge_run_detail)
+            if observed_data is not None:
+                gauge_data_all.extend(observed_data)
+
+
+        else:
+            logger.info(f"⚠️ Unknown observed API for gauge {gauge_loop['gauge_name']}: {gauge_loop['observed_api']}")
+            observed_data = None
+
+
+        forecast_data,gauge_run_detail = get_noaa_flow_forecast(gauge_loop)
+        gauge_run_details.append(gauge_run_detail)
+        if forecast_data is not None:
+            forecast_data = clean_usgs_noaa_data(forecast_data)
+            gauge_data_all.extend(forecast_data)
+
+    gauge_run_details = pl.DataFrame(gauge_run_details).with_columns(run_time = pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
+    gauge_run_details.write_parquet('data/kayak/gauge_run_details.parquet',)
 
     if not gauge_data_all:
-        return None, gauge_run_details
+        return None,gauge_run_details
 
-    gauge_data_all = (
-        pl.DataFrame(gauge_data_all)
-        .with_columns(run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
-    )
-    gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet')
 
-    return gauge_data_all, gauge_run_details
 
+    # Saving the data to the folder
+    gauge_data_all = (pl.DataFrame(gauge_data_all)
+                  .with_columns(run_time = pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
+                  )
+
+    gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
+
+
+    return gauge_data_all,gauge_run_details
 
 
 
