@@ -7,3 +7,4 @@ st.set_page_config(
 
 st.title("🏠 Home")
 st.write("Welcome! Use the sidebar to navigate between pages.")
+
