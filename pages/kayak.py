@@ -1,6 +1,7 @@
 import streamlit as st
 import polars as pl
 import pandas as pd
+import altair as alt
 from typing import Any, Dict, List, Tuple
 from utils.logger import logger
 from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_color_flow_range
@@ -99,7 +100,7 @@ st.title("🌊 Kayaking")
 
 
 # Tabs
-tab_current, tab_forecast, tab_river_details, tab_gauges = st.tabs(["Current", "Forecast","River Details",'Gauges'])
+tab_current, tab_forecast, tab_section_details, tab_gauges = st.tabs(["Current", "Forecast","Section Details",'Gauges'])
 
 with tab_current:
     st.subheader("Current River Levels")
@@ -111,7 +112,7 @@ with tab_current:
 with tab_forecast:
     st.header("Forecast")
 
-    section_options = st.multiselect(
+    forecast_section_options = st.multiselect(
     "Pick Your Rivers!",
     options=section_df['section_name'].to_list(),
     default=['Staircase','The Canyon'],
@@ -121,7 +122,7 @@ with tab_forecast:
         kayaking_levels_range
         .lazy()
         .select('section_name','mountain_time','river_level','flow_type')
-        .filter(pl.col("section_name").is_in(section_options))
+        .filter(pl.col("section_name").is_in(forecast_section_options))
         .with_columns(section_name=pl.when(pl.col('flow_type')=='standard').then(pl.col('section_name')).otherwise(pl.col('section_name') + ' (Max)'))
         .collect()
     )
@@ -136,9 +137,57 @@ with tab_forecast:
     st.header("Forecast Data Table")
     st.dataframe(kayaking_levels_filtered)
 
-with tab_river_details:
+with tab_section_details:
 
-    st.dataframe(kayaking_levels_range)
+    river_details_section_option = st.selectbox(
+    label="Select a river section to view details:",
+    options=section_df['section_name'].to_list(),
+    )
+
+    river_details_overlay_option = st.selectbox(
+    label="Select chart overlay:",
+    options=('Flow Range','Creekboat','Halfslice','Playboat'),
+    )
+
+    kayaking_levels_section = (
+            kayaking_levels_range
+            .lazy()
+            .select('section_name','mountain_time','river_level','flow_type')
+            .filter(pl.col("section_name")==river_details_section_option)
+            .with_columns(section_name=pl.when(pl.col('flow_type')=='standard').then(pl.col('section_name')).otherwise(pl.col('section_name') + ' (Max)'))
+            .collect()
+        )
+
+    section_overlay = section_df.filter(pl.col('section_name')==river_details_section_option).to_dicts()[0]
+    st.write(f"### {river_details_section_option} Details")
+    st.text(section_overlay)
+    st.dataframe(kayaking_levels_section)
+
+    line_df = pl.DataFrame({
+        "x": list(range(100)),
+        "flow": [3600 + i * 15 + (i % 7) * 30 for i in range(100)],
+    })
+
+    bands_df = pl.DataFrame({
+        "y1":    [0,    800,  2000, 4000],
+        "y2":    [800,  2000, 4000, 7000],
+        "color": ["#ff8080", "#90ee90", "#60d060", "#22bb22"],
+    })
+
+    bands = alt.Chart(bands_df).mark_rect(opacity=0.6).encode(
+        y=alt.Y("y1:Q"),
+        y2=alt.Y2("y2:Q"),
+        color=alt.Color("color:N", scale=None),
+    )
+
+    line = alt.Chart(line_df).mark_line(color="#2c3e6b", strokeWidth=2).encode(
+        x="x:Q",
+        y=alt.Y("flow:Q", scale=alt.Scale(domain=[0, 7000]))
+    )
+
+    chart = (bands + line).properties(width=700, height=400)
+
+    #st.altair_chart(chart, width='stretch')
 
 
 with tab_gauges:
@@ -147,3 +196,12 @@ with tab_gauges:
 
     st.header("Gauge Data Table")
     st.dataframe(clean_gauge_data)
+
+
+
+
+
+
+
+
+
