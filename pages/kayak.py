@@ -11,7 +11,7 @@ def load_static_data():
 
 @st.cache_data(ttl=3600)
 def run_river_flow_apis(gauge_list,section_df,river_df):
-    river_gauge_data= get_river_gauge_data(gauge_list)
+    river_gauge_data,gauge_run_details= get_river_gauge_data(gauge_list)
     clean_gauge_data = get_clean_gauge_data(river_gauge_data)
     kayaking_levels_cfs= get_kayaking_levels(
     df_clean=clean_gauge_data,
@@ -25,14 +25,14 @@ def run_river_flow_apis(gauge_list,section_df,river_df):
 
     kayaking_levels_current = get_current_river_levels(kayaking_levels_range,river_df)
 
-    return  river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current
+    return  river_gauge_data,gauge_run_details,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current
 
 
 
 # Data
 section_df, gauge_list, river_df = load_static_data()
 with st.spinner("Fetching river levels..."):
-    river_gauge_data,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df,river_df)
+    river_gauge_data,gauge_run_details,clean_gauge_data,kayaking_levels_cfs, kayaking_levels_ft,kayaking_levels_range,kayaking_levels_current = run_river_flow_apis(gauge_list,section_df,river_df)
 
 
 st.title("📊 Kayaking")
@@ -84,3 +84,4 @@ with tab_river_details:
 
 with tab_gauges:
     st.dataframe(pl.DataFrame(gauge_list))
+    st.dataframe(gauge_run_details)

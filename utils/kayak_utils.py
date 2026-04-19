@@ -14,6 +14,8 @@ def get_noaa_flow_forecast(gauge_dict):
     gauge_name = gauge_dict['gauge_name']
     noaa_id = gauge_dict['noaa_forecast_identifier']
 
+    gauge_run_dict = {'gauge_name': gauge_name,'identifier':noaa_id, 'source': 'noaa', 'data_type': 'forecast',}
+
     noaa_flow_forecast_rows = []
 
     try:
@@ -39,7 +41,9 @@ def get_noaa_flow_forecast(gauge_dict):
         else:
             logger.info(f"⚠️ NOAA empty | {gauge_id} | {gauge_name}")
 
-            return None
+            gauge_run_dict.update({'rows': 0,'error': None,})
+
+            return None, gauge_run_dict
 
         for p in points:
             noaa_flow_forecast_rows.append(
@@ -57,9 +61,12 @@ def get_noaa_flow_forecast(gauge_dict):
     except Exception as e:
         logger.info(f"❌ NOAA failed | {gauge_id} | {gauge_name} | {e}")
 
-        return None
+        gauge_run_dict.update({'rows': 0,'error': str(e),})
 
-    return noaa_flow_forecast_rows
+        return None, gauge_run_dict
+
+    gauge_run_dict.update({'rows': len(noaa_flow_forecast_rows),'error': None,})
+    return noaa_flow_forecast_rows,gauge_run_dict
 
 def get_usgs_observed_flow(gauge_dict):
     # https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html#/latest-daily/describeLatest-dailyCollection
@@ -68,6 +75,8 @@ def get_usgs_observed_flow(gauge_dict):
     usgs_id = gauge_dict['waterdata_usgs_identifier']
 
     usgs_observed_flow_rows = []
+
+    gauge_run_dict = {'gauge_name': gauge_name,'identifier':usgs_id, 'source': 'usgs', 'data_type': 'observed',}
 
     try:
 
@@ -88,10 +97,13 @@ def get_usgs_observed_flow(gauge_dict):
 
         if features:
             logger.info(f"✅ USGS success | {gauge_id} | {gauge_name} | rows={len(features)}")
+
         else:
             logger.info(f"⚠️ USGS empty | {gauge_id} | {gauge_name}")
 
-            return None
+            gauge_run_dict.update({'rows': 0,'error': None,})
+
+            return None, gauge_run_dict
 
         rows = []
         for f in features:
@@ -137,15 +149,20 @@ def get_usgs_observed_flow(gauge_dict):
     except Exception as e:
         logger.info(f"❌ USGS failed | {gauge_id} | {gauge_name} | {e}")
 
-        return None
+        gauge_run_dict.update({'rows': 0,'error': str(e),})
+        return None, gauge_run_dict
 
-    return usgs_observed_flow_rows
+    gauge_run_dict.update({'rows': len(usgs_observed_flow_rows),'error': None,})
+
+    return usgs_observed_flow_rows,gauge_run_dict
 
 def get_bureau_reclamation_observed_flow(gauge_dict):
     # https://www.usbr.gov/pn/hydromet/using_dfcgi.html
     gauge_id = gauge_dict['gauge_id']
     gauge_name = gauge_dict['gauge_name']
     bureau_reclamation_id = gauge_dict['bureau_reclamation_identifier']
+
+    gauge_run_dict = {'gauge_name': gauge_name,'identifier':bureau_reclamation_id, 'source': 'bureau_rec', 'data_type': 'observed',}
 
     try:
 
@@ -184,14 +201,16 @@ def get_bureau_reclamation_observed_flow(gauge_dict):
         else:
             logger.info(f"⚠️ Bureau Reclaimation empty | {gauge_id} | {gauge_name}")
 
-            return None
+            gauge_run_dict.update({'rows': 0,'error': None,})
+            return None,gauge_run_dict
 
     except Exception as e:
             logger.info(f"❌ Bureau Reclaimation failed | {gauge_id} | {gauge_name} | {e}")
-            return None
+            gauge_dict.update({'rows': 0,'error': str(e),})
+            return None,gauge_dict
 
-
-    return bureau_reclamation_observed_flow
+    gauge_run_dict.update({'rows': len(bureau_reclamation_observed_flow),'error': None,})
+    return bureau_reclamation_observed_flow,gauge_run_dict
 
 def clean_usgs_noaa_data(gauge_data):
     return (
@@ -224,9 +243,12 @@ def get_river_gauge_data(gauge_list):
         current_time = datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)
         time_difference_minutes = ((current_time - existing_run_time).total_seconds() / 60)
 
+        gauge_run_details = pl.read_parquet('data/kayak/gauge_run_details.parquet')
+
         if time_difference_minutes <= 60:
             logger.info(f"✅ Existing gauge data is recent ({time_difference_minutes:.1f} minutes old). Using cached data.")
-            return gauge_data_existing
+
+            return gauge_data_existing,gauge_run_details
 
         else:
              logger.info(f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data.")
@@ -239,18 +261,25 @@ def get_river_gauge_data(gauge_list):
     logger.info('Beggining to fetch river gauge data for all gauges...')
 
     gauge_data_all = []
+    gauge_run_details = []
 
     for gauge_loop in gauge_list:
         logger.info(f"Processing gauge: {gauge_loop['gauge_name']}")
 
         if gauge_loop['observed_api'] == 'waterdata_usgs':
-            observed_data = get_usgs_observed_flow(gauge_loop)
+            observed_data,gauge_run_detail = get_usgs_observed_flow(gauge_loop)
+
+            gauge_run_details.append(gauge_run_detail)
+
+
             if observed_data is not None:
                 observed_data = clean_usgs_noaa_data(observed_data)
                 gauge_data_all.extend(observed_data)
 
         elif gauge_loop['observed_api'] == 'bureau_reclamation':
-            observed_data = get_bureau_reclamation_observed_flow(gauge_loop)
+            observed_data,gauge_run_detail = get_bureau_reclamation_observed_flow(gauge_loop)
+
+            gauge_run_details.append(gauge_run_detail)
             if observed_data is not None:
                 gauge_data_all.extend(observed_data)
 
@@ -260,13 +289,18 @@ def get_river_gauge_data(gauge_list):
             observed_data = None
 
 
-        forecast_data = get_noaa_flow_forecast(gauge_loop)
+        forecast_data,gauge_run_detail = get_noaa_flow_forecast(gauge_loop)
+        gauge_run_details.append(gauge_run_detail)
         if forecast_data is not None:
             forecast_data = clean_usgs_noaa_data(forecast_data)
             gauge_data_all.extend(forecast_data)
 
+    gauge_run_details = pl.DataFrame(gauge_run_details).with_columns(run_time = pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
+    gauge_run_details.write_parquet('data/kayak/gauge_run_details.parquet',)
+
     if not gauge_data_all:
-        return None
+        return None,gauge_run_details
+
 
 
     # Saving the data to the folder
@@ -277,7 +311,7 @@ def get_river_gauge_data(gauge_list):
     gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
 
 
-    return gauge_data_all
+    return gauge_data_all,gauge_run_details
 
 
 
@@ -554,7 +588,7 @@ def get_kayaking_levels_range(kayaking_levels_cfs,kayaking_levels_ft,section_df)
 
 def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl.DataFrame:
 
-    kayaking_current = (
+    kayaking_current_for_streamlit = (
         kayaking_levels_range
         .lazy()
         .select('mountain_time','data_type','section_name','flow_type','river_level','flow_range','flow_unit','river_id')
@@ -569,18 +603,18 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
     )
 
     kayaking_current_pivot_river_level = (
-        kayaking_current
+        kayaking_current_for_streamlit
         .pivot(index=['section_name','river_id'],on='flow_type',values=['river_level',])
         .rename({'standard':'river_level','max':'river_level_max'})
     )
 
     kayaking_current_pivot_flow_range = (
-        kayaking_current
+        kayaking_current_for_streamlit
         .pivot(index=['section_name',],on='flow_type',values=['flow_range',])
         .rename({'standard':'flow_range','max':'flow_range_max'})
     )
 
-    kayaking_current_pivot=(
+    kayaking_current_for_streamlit=(
         kayaking_current_pivot_river_level
         .join(kayaking_current_pivot_flow_range, on='section_name',)
         .join(river_df,on='river_id')
@@ -604,12 +638,12 @@ def get_current_river_levels(kayaking_levels_range: pl.DataFrame,river_df) -> pl
     )
 
 
-    kayaking_current_pivot = kayaking_current_pivot.to_pandas()
+    kayaking_current_for_streamlit = kayaking_current_for_streamlit.to_pandas()
 
     for column in ['river_level','river_level_max']:
-         kayaking_current_pivot[column] = kayaking_current_pivot[column].apply(format_level_current)
+         kayaking_current_for_streamlit[column] = kayaking_current_for_streamlit[column].apply(format_level_current)
 
-    return kayaking_current_pivot
+    return kayaking_current_for_streamlit
 
 
 def format_level_current(val):

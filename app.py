@@ -90,3 +90,8 @@ st.write("Welcome! Use the sidebar to navigate between pages.")
 #         return None
 
 #     return pl.DataFrame(gauge_data_all)
+
+# gauge_output
+# parallelize the api calls for the gauges
+# fix nf gauge
+# add doc strings & type hints
