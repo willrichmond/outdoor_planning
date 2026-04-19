@@ -220,7 +220,7 @@ def get_river_gauge_data(gauge_list):
         gauge_data_existing = pl.read_parquet('data/kayak/gauge_data_all.parquet')
         existing_run_time = gauge_data_existing['run_time'].to_list()[0]
 
-        current_time = datetime.now(ZoneInfo("America/Denver"))
+        current_time = datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)
         time_difference_minutes = ((current_time - existing_run_time).total_seconds() / 60)
 
         if time_difference_minutes <= 60:
@@ -270,8 +270,8 @@ def get_river_gauge_data(gauge_list):
 
     # Saving the data to the folder
     gauge_data_all = (pl.DataFrame(gauge_data_all)
-                      .with_columns(run_time = datetime.now(ZoneInfo("America/Denver")))
-                      )
+                  .with_columns(run_time = pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)))
+                  )
 
     gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
 
