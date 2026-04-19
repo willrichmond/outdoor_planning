@@ -2,6 +2,7 @@ from utils.logger import logger
 import polars as pl
 import requests
 import io
+from zoneinfo import ZoneInfo
 from datetime import datetime
 from typing import Any, Dict, List, Optional,Literal
 
@@ -219,15 +220,19 @@ def get_river_gauge_data(gauge_list):
         gauge_data_existing = pl.read_parquet('data/kayak/gauge_data_all.parquet')
         existing_run_time = gauge_data_existing['run_time'].to_list()[0]
 
-        current_time = datetime.now()
-        time_difference = current_time - existing_run_time
+        current_time = datetime.now(ZoneInfo("America/Denver"))
+        time_difference_minutes = ((current_time - existing_run_time).total_seconds() / 60)
 
-        print(time_difference)
-        print(time_difference.total_seconds())
-        print(time_difference.total_seconds() / 3600)
+        if time_difference_minutes <= 60:
+            logger.info(f"✅ Existing gauge data is recent ({time_difference_minutes:.1f} minutes old). Using cached data.")
+            return gauge_data_existing
+
+        else:
+             logger.info(f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data.")
+
     except Exception as e:
         logger.info(f"⚠️ No existing gauge data found or error reading file: {e}")
-        gauge_data_existing = None
+
 
 
     logger.info('Beggining to fetch river gauge data for all gauges...')
@@ -265,7 +270,7 @@ def get_river_gauge_data(gauge_list):
 
     # Saving the data to the folder
     gauge_data_all = (pl.DataFrame(gauge_data_all)
-                      .with_columns(run_time = datetime.now())
+                      .with_columns(run_time = datetime.now(ZoneInfo("America/Denver")))
                       )
 
     gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
