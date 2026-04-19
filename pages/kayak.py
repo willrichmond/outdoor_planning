@@ -2,7 +2,7 @@ import streamlit as st
 import polars as pl
 from utils.logger import logger
 from utils.kayak_utils import get_clean_gauge_data, get_kayaking_levels, get_current_river_levels,get_river_gauge_data,get_kayaking_levels_range,get_kayaking_levels_pivot
-from data.kayak import section_list, gauge_list,river_list
+from data.kayak.kayak_static import section_list, gauge_list,river_list
 
 @st.cache_data(ttl=3600)
 def load_static_data():

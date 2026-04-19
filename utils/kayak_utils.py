@@ -213,6 +213,23 @@ def clean_usgs_noaa_data(gauge_data):
 
 def get_river_gauge_data(gauge_list):
 
+    logging.info('Checking for existing gauge data...')
+
+    try:
+        gauge_data_existing = pl.read_parquet('data/kayak/gauge_data_all.parquet')
+        existing_run_time = gauge_data_existing['run_time'].to_list()[0]
+
+        current_time = datetime.now()
+        time_difference = current_time - existing_run_time
+
+        print(time_difference)
+        print(time_difference.total_seconds())
+        print(time_difference.total_seconds() / 3600)
+    except Exception as e:
+        logger.info(f"⚠️ No existing gauge data found or error reading file: {e}")
+        gauge_data_existing = None
+
+
     logger.info('Beggining to fetch river gauge data for all gauges...')
 
     gauge_data_all = []
@@ -246,6 +263,7 @@ def get_river_gauge_data(gauge_list):
         return None
 
 
+    # Saving the data to the folder
     gauge_data_all = (pl.DataFrame(gauge_data_all)
                       .with_columns(run_time = datetime.now())
                       )
@@ -253,7 +271,7 @@ def get_river_gauge_data(gauge_list):
     gauge_data_all.write_parquet('data/kayak/gauge_data_all.parquet',)
 
 
-    return pl.DataFrame(gauge_data_all)
+    return gauge_data_all
 
 
 
