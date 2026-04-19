@@ -213,7 +213,7 @@ def clean_usgs_noaa_data(gauge_data):
 
 def get_river_gauge_data(gauge_list):
 
-    logging.info('Checking for existing gauge data...')
+    logger.info('Checking for existing gauge data...')
 
     try:
         gauge_data_existing = pl.read_parquet('data/kayak/gauge_data_all.parquet')
