@@ -5,19 +5,61 @@ import requests
 import io
 from zoneinfo import ZoneInfo
 from datetime import datetime
-from typing import Any, Dict, List, Optional,Literal
+from typing import Any, Dict, List, Optional,Literal, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-def get_noaa_flow_forecast(gauge_dict):
-    # https://api.water.noaa.gov/nwps/v1/docs/#/Products/Products_GetStageFlow
+def get_noaa_flow_forecast(
+gauge_dict: Dict[str, Any],
+) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
+    """
+    Fetch NOAA stage/flow forecast data for a given gauge.
+    Calls the NOAA NWPS API to retrieve forecasted flow (cfs) and stage (ft)
+    time series for a specified gauge. The function normalizes units to ensure
+    flow is always returned in cubic feet per second (cfs), converting from
+    kcfs when necessary.
+
+    Args:
+        gauge_dict: Dictionary containing gauge metadata with required keys:
+            - 'gauge_id' (str | int): Internal identifier for the gauge.
+            - 'gauge_name' (str): Human-readable name of the gauge.
+            - 'noaa_forecast_identifier' (str): NOAA gauge identifier used
+            in the API request.
+
+    Returns:
+        A tuple containing:
+            - List of dictionaries (or None if failure/empty):
+                Each dictionary represents a forecast data point with keys:
+                - 'gauge_name' (str)
+                - 'gauge_id' (str | int)
+                - 'source' (str): Always 'noaa_forecast'
+                - 'data_type' (str): Always 'forecast'
+                - 'time' (str): ISO timestamp of forecast
+                - 'flow_cfs' (float): Flow in cubic feet per second
+                - 'stage_ft' (float): Stage in feet
+            - gauge_run_dict (dict):
+                Metadata about the API call including:
+                - 'gauge_name' (str)
+                - 'identifier' (str)
+                - 'source' (str)
+                - 'data_type' (str)
+                - 'rows' (int): Number of rows returned
+                - 'error' (str | None): Error message if failed
+
+    Notes:
+        - If NOAA returns 'primaryUnits' as 'kcfs', values are multiplied by 1000
+        to convert to cfs.
+        - Returns (None, gauge_run_dict) if the request fails or returns no data.
+        - API documentation:
+        https://api.water.noaa.gov/nwps/v1/docs/#/Products/Products_GetStageFlow
+    """
     gauge_id = gauge_dict['gauge_id']
     gauge_name = gauge_dict['gauge_name']
     noaa_id = gauge_dict['noaa_forecast_identifier']
 
-    gauge_run_dict = {'gauge_name': gauge_name,'identifier':noaa_id, 'source': 'noaa', 'data_type': 'forecast',}
+    gauge_run_dict: Dict[str, Any] = {'gauge_name': gauge_name,'identifier':noaa_id, 'source': 'noaa', 'data_type': 'forecast',}
 
-    noaa_flow_forecast_rows = []
+    noaa_flow_forecast_rows: List[Dict[str, Any]] = []
 
     try:
         url = f"https://api.water.noaa.gov/nwps/v1/gauges/{noaa_id}/stageflow/forecast"
