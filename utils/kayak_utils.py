@@ -608,7 +608,7 @@ def fetch_all_gauge_data(
     gauge_data_all = []
     gauge_run_details = []
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {executor.submit(process_gauge, g): g for g in gauge_list}
         for future in as_completed(futures):
             try:
@@ -629,10 +629,6 @@ def get_river_gauge_data(
     """
     Retrieve river gauge data with caching and refresh logic.
 
-    Attempts to load previously stored gauge data and determines whether it is
-    recent enough (within 60 minutes) to reuse. If cached data is stale or
-    unavailable, new data is fetched via `fetch_all_gauge_data`, persisted to
-    disk, and returned.
 
     Args:
         gauge_list: List of dictionaries containing gauge configurations. Each
@@ -663,41 +659,11 @@ def get_river_gauge_data(
                 - 'run_time' (datetime)
 
     Notes:
-        - Cached data is stored in:
-            - 'data/kayak/gauge_data_all.parquet'
-            - 'data/kayak/gauge_run_details.parquet'
-        - Cache is considered valid if it is ≤ 60 minutes old.
         - All timestamps are generated in America/Denver and stored as
         timezone-naive datetimes.
-        - If cached data is valid, no API calls are made.
         - If fetching fails or returns no data, gauge_data_all may be None.
     """
 
-    logger.info("Checking for existing gauge data...")
-
-    try:
-        gauge_data_existing = pl.read_parquet("data/kayak/gauge_data_all.parquet")
-        existing_run_time = gauge_data_existing["run_time"].to_list()[0]
-
-        current_time = datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)
-        time_difference_minutes = (
-            current_time - existing_run_time
-        ).total_seconds() / 60
-
-        gauge_run_details = pl.read_parquet("data/kayak/gauge_run_details.parquet")
-
-        if time_difference_minutes <= 60:
-            logger.info(
-                f"✅ Existing gauge data is recent ({time_difference_minutes:.1f} minutes old). Using cached data."
-            )
-            return gauge_data_existing, gauge_run_details
-        else:
-            logger.info(
-                f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data."
-            )
-
-    except Exception as e:
-        logger.info(f"⚠️ No existing gauge data found or error reading file: {e}")
 
     logger.info("Beginning to fetch river gauge data for all gauges...")
 
@@ -706,7 +672,6 @@ def get_river_gauge_data(
     gauge_run_details = pl.DataFrame(gauge_run_details).with_columns(
         run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None))
     )
-    gauge_run_details.write_parquet("data/kayak/gauge_run_details.parquet")
 
     if not gauge_data_all:
         return None, gauge_run_details
@@ -714,7 +679,6 @@ def get_river_gauge_data(
     gauge_data_all = pl.DataFrame(gauge_data_all).with_columns(
         run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None))
     )
-    gauge_data_all.write_parquet("data/kayak/gauge_data_all.parquet")
 
     return gauge_data_all, gauge_run_details
 
