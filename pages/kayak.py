@@ -127,6 +127,20 @@ tab_current, tab_forecast, tab_section_details, tab_gauges = st.tabs(
 
 with tab_current:
     st.subheader("Current River Levels")
+
+    level_colors = {
+    'Too Low': 'background-color: #E74C3C',
+    'Low':     'background-color: #89CFF0',
+    'Medium':    'background-color: #2ECC71',
+    'High':    'background-color: #FFEA00',
+    'Too High': 'background-color: #E74C3C',
+    }
+
+
+    st.dataframe(
+    pd.DataFrame({'level': ['Too Low', 'Low', 'Medium', 'High', 'Too High']}).T.style.map(lambda val: level_colors.get(val, ''))
+    )
+
     st.dataframe(
         kayaking_levels_current.style.apply(get_color_flow_range, axis=1),
         column_config={
