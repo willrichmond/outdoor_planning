@@ -608,7 +608,7 @@ def fetch_all_gauge_data(
     gauge_data_all = []
     gauge_run_details = []
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {executor.submit(process_gauge, g): g for g in gauge_list}
         for future in as_completed(futures):
             try:
@@ -629,10 +629,6 @@ def get_river_gauge_data(
     """
     Retrieve river gauge data with caching and refresh logic.
 
-    Attempts to load previously stored gauge data and determines whether it is
-    recent enough (within 60 minutes) to reuse. If cached data is stale or
-    unavailable, new data is fetched via `fetch_all_gauge_data`, persisted to
-    disk, and returned.
 
     Args:
         gauge_list: List of dictionaries containing gauge configurations. Each
@@ -663,41 +659,10 @@ def get_river_gauge_data(
                 - 'run_time' (datetime)
 
     Notes:
-        - Cached data is stored in:
-            - 'data/kayak/gauge_data_all.parquet'
-            - 'data/kayak/gauge_run_details.parquet'
-        - Cache is considered valid if it is ≤ 60 minutes old.
         - All timestamps are generated in America/Denver and stored as
         timezone-naive datetimes.
-        - If cached data is valid, no API calls are made.
         - If fetching fails or returns no data, gauge_data_all may be None.
     """
-
-    logger.info("Checking for existing gauge data...")
-
-    try:
-        gauge_data_existing = pl.read_parquet("data/kayak/gauge_data_all.parquet")
-        existing_run_time = gauge_data_existing["run_time"].to_list()[0]
-
-        current_time = datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None)
-        time_difference_minutes = (
-            current_time - existing_run_time
-        ).total_seconds() / 60
-
-        gauge_run_details = pl.read_parquet("data/kayak/gauge_run_details.parquet")
-
-        if time_difference_minutes <= 60:
-            logger.info(
-                f"✅ Existing gauge data is recent ({time_difference_minutes:.1f} minutes old). Using cached data."
-            )
-            return gauge_data_existing, gauge_run_details
-        else:
-            logger.info(
-                f"⚠️ Existing gauge data is old ({time_difference_minutes:.1f} minutes old). Fetching new data."
-            )
-
-    except Exception as e:
-        logger.info(f"⚠️ No existing gauge data found or error reading file: {e}")
 
     logger.info("Beginning to fetch river gauge data for all gauges...")
 
@@ -706,7 +671,6 @@ def get_river_gauge_data(
     gauge_run_details = pl.DataFrame(gauge_run_details).with_columns(
         run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None))
     )
-    gauge_run_details.write_parquet("data/kayak/gauge_run_details.parquet")
 
     if not gauge_data_all:
         return None, gauge_run_details
@@ -714,7 +678,6 @@ def get_river_gauge_data(
     gauge_data_all = pl.DataFrame(gauge_data_all).with_columns(
         run_time=pl.lit(datetime.now(ZoneInfo("America/Denver")).replace(tzinfo=None))
     )
-    gauge_data_all.write_parquet("data/kayak/gauge_data_all.parquet")
 
     return gauge_data_all, gauge_run_details
 
@@ -835,21 +798,8 @@ def get_kayaking_levels(
         .sort(["mountain_time", "data_type"])
         .with_columns(pl.all().forward_fill())
         .with_columns(pl.all().backward_fill())
-        .with_columns(
-            pl.col("1").fill_null(0).alias("1"),
-            pl.col("2").fill_null(0).alias("2"),
-            pl.col("3").fill_null(0).alias("3"),
-            pl.col("4").fill_null(0).alias("4"),
-            pl.col("5").fill_null(0).alias("5"),
-            pl.col("6").fill_null(0).alias("6"),
-            pl.col("7").fill_null(0).alias("7"),
-            pl.col("8").fill_null(0).alias("8"),
-            pl.col("9").fill_null(0).alias("9"),
-            pl.col("10").fill_null(0).alias("10"),
-            pl.col("11").fill_null(0).alias("11"),
-            pl.col("12").fill_null(0).alias("12"),
-            pl.col("13").fill_null(0).alias("13"),
-        )
+        # Filling any remaining nulls with 0 before calculations, since nulls would
+        .with_columns([pl.col(str(i)).fill_null(0).alias(str(i)) for i in range(1, 16)])
         .with_columns(
             section_id_1=pl.col("2"),
             section_id_2=pl.col("2"),
@@ -860,6 +810,7 @@ def get_kayaking_levels(
             section_id_7=pl.col("4"),
             section_id_8=pl.col("4") + pl.col("5"),
             section_id_8_max=pl.col("2") - pl.col("3") - pl.col("6"),
+            section_id_9=pl.col("15"),
             section_id_10=pl.col("2") - pl.col("3"),
             section_id_11=pl.col("5"),
             section_id_12=pl.col("8"),
@@ -875,24 +826,14 @@ def get_kayaking_levels(
             section_id_22=pl.col("11"),
             section_id_23=pl.col("4") + pl.col("5"),
             section_id_23_max=pl.col("2") - pl.col("3") - pl.col("6"),
+            section_id_24=pl.col("14"),
             section_id_25=pl.col("13"),
+            section_id_25_max=pl.col("3"),
             section_id_26=pl.col("6"),
+            section_id_27=pl.col("13"),
         )
-        .drop(
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-        )
+        # Removing all gauges
+        .drop([str(i) for i in range(1, 16)])
     )
     return kayaking_levels
 

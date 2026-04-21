@@ -129,16 +129,17 @@ with tab_current:
     st.subheader("Current River Levels")
 
     level_colors = {
-    'Too Low': 'background-color: #E74C3C',
-    'Low':     'background-color: #89CFF0',
-    'Medium':    'background-color: #2ECC71',
-    'High':    'background-color: #FFEA00',
-    'Too High': 'background-color: #E74C3C',
+        "Too Low": "background-color: #E74C3C",
+        "Low": "background-color: #89CFF0",
+        "Medium": "background-color: #2ECC71",
+        "High": "background-color: #FFEA00",
+        "Too High": "background-color: #E74C3C",
     }
 
-
     st.dataframe(
-    pd.DataFrame({'level': ['Too Low', 'Low', 'Medium', 'High', 'Too High']}).T.style.map(lambda val: level_colors.get(val, ''))
+        pd.DataFrame(
+            {"level": ["Too Low", "Low", "Medium", "High", "Too High"]}
+        ).T.style.map(lambda val: level_colors.get(val, ""))
     )
 
     st.dataframe(
