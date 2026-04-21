@@ -664,7 +664,6 @@ def get_river_gauge_data(
         - If fetching fails or returns no data, gauge_data_all may be None.
     """
 
-
     logger.info("Beginning to fetch river gauge data for all gauges...")
 
     gauge_data_all, gauge_run_details = fetch_all_gauge_data(gauge_list)
@@ -799,11 +798,8 @@ def get_kayaking_levels(
         .sort(["mountain_time", "data_type"])
         .with_columns(pl.all().forward_fill())
         .with_columns(pl.all().backward_fill())
-
         # Filling any remaining nulls with 0 before calculations, since nulls would
-        .with_columns(
-            [pl.col(str(i)).fill_null(0).alias(str(i)) for i in range(1, 16)]
-        )
+        .with_columns([pl.col(str(i)).fill_null(0).alias(str(i)) for i in range(1, 16)])
         .with_columns(
             section_id_1=pl.col("2"),
             section_id_2=pl.col("2"),
@@ -814,7 +810,7 @@ def get_kayaking_levels(
             section_id_7=pl.col("4"),
             section_id_8=pl.col("4") + pl.col("5"),
             section_id_8_max=pl.col("2") - pl.col("3") - pl.col("6"),
-            section_id_9=pl.col('15'),
+            section_id_9=pl.col("15"),
             section_id_10=pl.col("2") - pl.col("3"),
             section_id_11=pl.col("5"),
             section_id_12=pl.col("8"),
@@ -837,9 +833,7 @@ def get_kayaking_levels(
             section_id_27=pl.col("13"),
         )
         # Removing all gauges
-        .drop(
-            [str(i) for i in range(1, 16)]
-        )
+        .drop([str(i) for i in range(1, 16)])
     )
     return kayaking_levels
 

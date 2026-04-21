@@ -172,8 +172,6 @@ gauge_list = [
         "lat": 44.5248931741067,
         "lon": -116.046798314511,
     },
-
-
     {
         "gauge_id": 14,
         "gauge_name": "Bruneau River at Hot Springs",
@@ -185,7 +183,6 @@ gauge_list = [
         "forecast_api": "noaa",
         "lat": 42.7711,
         "lon": -115.719,
-
     },
     {
         "gauge_id": 15,
@@ -426,7 +423,6 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
-
     {
         "section_id": 9,
         "river_id": 15,
@@ -455,7 +451,6 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
-
     {
         "section_id": 10,
         "river_id": 2,
@@ -848,8 +843,6 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
-
-
     {
         "section_id": 24,
         "river_id": 14,
@@ -878,7 +871,6 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
-
     {
         "section_id": 25,
         "river_id": 4,
@@ -935,7 +927,6 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
-
     {
         "section_id": 27,
         "river_id": 4,
