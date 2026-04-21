@@ -799,20 +799,10 @@ def get_kayaking_levels(
         .sort(["mountain_time", "data_type"])
         .with_columns(pl.all().forward_fill())
         .with_columns(pl.all().backward_fill())
+
+        # Filling any remaining nulls with 0 before calculations, since nulls would
         .with_columns(
-            pl.col("1").fill_null(0).alias("1"),
-            pl.col("2").fill_null(0).alias("2"),
-            pl.col("3").fill_null(0).alias("3"),
-            pl.col("4").fill_null(0).alias("4"),
-            pl.col("5").fill_null(0).alias("5"),
-            pl.col("6").fill_null(0).alias("6"),
-            pl.col("7").fill_null(0).alias("7"),
-            pl.col("8").fill_null(0).alias("8"),
-            pl.col("9").fill_null(0).alias("9"),
-            pl.col("10").fill_null(0).alias("10"),
-            pl.col("11").fill_null(0).alias("11"),
-            pl.col("12").fill_null(0).alias("12"),
-            pl.col("13").fill_null(0).alias("13"),
+            [pl.col(str(i)).fill_null(0).alias(str(i)) for i in range(1, 16)]
         )
         .with_columns(
             section_id_1=pl.col("2"),
@@ -824,6 +814,7 @@ def get_kayaking_levels(
             section_id_7=pl.col("4"),
             section_id_8=pl.col("4") + pl.col("5"),
             section_id_8_max=pl.col("2") - pl.col("3") - pl.col("6"),
+            section_id_9=pl.col('15'),
             section_id_10=pl.col("2") - pl.col("3"),
             section_id_11=pl.col("5"),
             section_id_12=pl.col("8"),
@@ -839,24 +830,15 @@ def get_kayaking_levels(
             section_id_22=pl.col("11"),
             section_id_23=pl.col("4") + pl.col("5"),
             section_id_23_max=pl.col("2") - pl.col("3") - pl.col("6"),
+            section_id_24=pl.col("14"),
             section_id_25=pl.col("13"),
             section_id_25_max=pl.col("3"),
             section_id_26=pl.col("6"),
+            section_id_27=pl.col("13"),
         )
+        # Removing all gauges
         .drop(
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
+            [str(i) for i in range(1, 16)]
         )
     )
     return kayaking_levels
