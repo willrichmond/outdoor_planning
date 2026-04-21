@@ -425,7 +425,7 @@ section_list = [
     },
     {
         "section_id": 9,
-        "river_id": 15,
+        "river_id": 14,
         "section": "sf_salmon",
         "section_name": "South Fork Salmon",
         "flow_unit": "feet",
