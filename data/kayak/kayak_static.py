@@ -11,6 +11,8 @@ river_list = [
     {"river_id": 10, "river_name": "Middle Fork Owyhee"},
     {"river_id": 11, "river_name": "Middle Fork Salmon"},
     {"river_id": 12, "river_name": "Murtaugh"},
+    {"river_id": 13, "river_name": "Bruneau"},
+    {"river_id": 14, "river_name": "South Fork Salmon"},
 ]
 
 gauge_list = [
@@ -169,6 +171,32 @@ gauge_list = [
         "forecast_api": "noaa",
         "lat": 44.5248931741067,
         "lon": -116.046798314511,
+    },
+
+
+    {
+        "gauge_id": 14,
+        "gauge_name": "Bruneau",
+        "river_id": 13,
+        "waterdata_usgs_identifier": "None",
+        "noaa_forecast_identifier": "CSDI1",
+        "bureau_reclamation_identifier": None,
+        "observed_api": "waterdata_usgs",
+        "forecast_api": "noaa",
+        "lat": 44.5248931741067,
+        "lon": -116.046798314511,
+    },
+    {
+        "gauge_id": 15,
+        "gauge_name": "South Fork Salmon River at Krassel Ranger Station",
+        "river_id": 14,
+        "waterdata_usgs_identifier": "USGS-13310700",
+        "noaa_forecast_identifier": "13310700",
+        "bureau_reclamation_identifier": None,
+        "observed_api": "waterdata_usgs",
+        "forecast_api": "noaa",
+        "lat": 44.9869,
+        "lon": -115.725,
     },
 ]
 
@@ -397,6 +425,37 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
+ #############################
+    {
+        "section_id": 9,
+        "river_id": 3,
+        "section": "sf_salmon",
+        "section_name": "South Fork Salmon",
+        "flow_unit": "cfs",
+        "min_level": 500,
+        "medium_level": 1_000,
+        "high_level": 2_000,
+        "max_level": 2_500,
+        "min_creek_boat": 500,
+        "max_creek_boat": 2_500,
+        "min_half_slice": None,
+        "max_half_slice": None,
+        "min_play_boat": None,
+        "max_play_boat": None,
+        "lat": 30,
+        "lon": 30,
+        "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4120/main",
+        "state": "Idaho",
+        "link_1": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "link_2": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "link_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_1": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_2": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+    },
+############################
+
     {
         "section_id": 10,
         "river_id": 2,
@@ -789,6 +848,38 @@ section_list = [
         "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
         "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
     },
+
+    #############################
+    {
+        "section_id": 24,
+        "river_id": 3,
+        "section": "sf_salmon",
+        "section_name": "South Fork Salmon",
+        "flow_unit": "cfs",
+        "min_level": 500,
+        "medium_level": 1_000,
+        "high_level": 2_000,
+        "max_level": 2_500,
+        "min_creek_boat": 500,
+        "max_creek_boat": 2_500,
+        "min_half_slice": None,
+        "max_half_slice": None,
+        "min_play_boat": None,
+        "max_play_boat": None,
+        "lat": 30,
+        "lon": 30,
+        "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4120/main",
+        "state": "Idaho",
+        "link_1": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "link_2": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "link_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_1": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_2": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_3": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+        "video_4": "https://www.youtube.com/watch?v=y2JDLtvURPs",
+    },
+############################
+
     {
         "section_id": 25,
         "river_id": 4,

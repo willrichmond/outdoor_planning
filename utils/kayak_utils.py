@@ -840,6 +840,7 @@ def get_kayaking_levels(
             section_id_23=pl.col("4") + pl.col("5"),
             section_id_23_max=pl.col("2") - pl.col("3") - pl.col("6"),
             section_id_25=pl.col("13"),
+            section_id_25_max=pl.col("3"),
             section_id_26=pl.col("6"),
         )
         .drop(

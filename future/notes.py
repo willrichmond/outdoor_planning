@@ -117,8 +117,7 @@
 
 # st.altair_chart(chart, theme="streamlit", width='stretch')
 
-# remove caching
-# cabarton
+
 # sf salmon
 # jarbridge bruenau
 
