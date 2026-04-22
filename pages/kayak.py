@@ -39,7 +39,7 @@ def load_static_data() -> Tuple[pl.DataFrame, List[Dict[str, Any]], pl.DataFrame
     return pl.DataFrame(section_list), gauge_list, pl.DataFrame(river_list)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=1800)
 def run_river_flow_apis(
     gauge_list: List[Dict[str, Any]],
     section_df: pl.DataFrame,
@@ -187,11 +187,6 @@ with tab_section_details:
     river_details_section_option = st.selectbox(
         label="Select a river section to view details:",
         options=section_df["section_name"].to_list(),
-    )
-
-    river_details_overlay_option = st.selectbox(
-        label="Select chart overlay:",
-        options=("Flow Range", "Creekboat", "Halfslice", "Playboat"),
     )
 
     kayaking_levels_section = (
