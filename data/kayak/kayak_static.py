@@ -290,8 +290,8 @@ section_list = [
     {
         "section_id": 5,
         "river_id": 4,
-        "section": "nf_payette",
-        "section_name": "The North Fork",
+        "section": "nf_payette_warm_up",
+        "section_name": "The Warm Up",
         "flow_unit": "cfs",
         "min_level": 1_450,
         "medium_level": 1_500,
