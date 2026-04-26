@@ -244,7 +244,7 @@ with tab_section_details:
     line = (
         alt.Chart(kayaking_levels_section)
         .mark_line(color="#2c3e6b", strokeWidth=2)
-        .encode(x="x:Q", y=alt.Y("flow:Q", scale=alt.Scale(domain=[0, 7000])))
+        .encode(x="mountain_time:Q", y=alt.Y("river_level:Q", scale=alt.Scale(domain=[0, 7000])))
     )
 
     chart = (bands + line).properties(width=700, height=400)
