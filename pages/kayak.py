@@ -205,12 +205,73 @@ with tab_section_details:
         pl.col("section_name") == river_details_section_option
     ).to_dicts()[0]
     st.write(f"### {river_details_section_option} Details")
+    st.dataframe(
+        pd.DataFrame(
+            {"level": ["Too Low", "Low", "Medium", "High", "Too High"]}
+        ).T.style.map(lambda val: level_colors.get(val, ""))
+    )
     st.text(section_overlay)
     st.dataframe(kayaking_levels_section)
 
-    bands_df = pl.DataFrame(
-        {
-            "y1": [0, section_overlay['min_level'],
+    river_level_min = kayaking_levels_section['river_level'].min()
+    river_level_max = kayaking_levels_section['river_level'].max()
+
+    if river_level_max < section_overlay['min_level']:
+
+        bands_dict = {
+            "y1": [0,
+                   section_overlay['min_level'],
+                   ],
+            "y2": [section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   ],
+            "color": ["#E74C3C", "#89CFF0",],
+        }
+
+
+    elif river_level_min > section_overlay['max_level']:
+         bands_dict={
+            "y1": [section_overlay['high_level'],
+                   section_overlay['max_level']],
+            "y2": [section_overlay['max_level'],
+                   (river_level_max*1.1)],
+            "color": ["#FFEA00",'#E74C3C'],
+        }
+    elif river_level_min > section_overlay['min_level'] and river_level_max < section_overlay['high_level']:
+        bands_dict ={
+            "y1": [(section_overlay['min_level']/2),
+                   section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   ],
+            "y2": [section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   (section_overlay['high_level']* 2 + section_overlay['max_level'])/3,
+                   ],
+            "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00",],
+        }
+
+    elif river_level_min > section_overlay['medium_level']:
+        bands_dict ={
+            "y1": [
+                   section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   section_overlay['max_level'],
+                   ],
+            "y2": [
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   section_overlay['max_level'],
+                   (section_overlay['max_level']*1.1)],
+            "color": [ "#89CFF0", "#2ECC71", "#FFEA00",'#E74C3C'],
+        }
+
+    else:
+        bands_dict ={
+            "y1": [0,
+                   section_overlay['min_level'],
                    section_overlay['medium_level'],
                    section_overlay['high_level'],
                    section_overlay['max_level'],
@@ -221,7 +282,10 @@ with tab_section_details:
                    section_overlay['max_level'],
                    (section_overlay['max_level']*1.1)],
             "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00",'#E74C3C'],
-        },
+        }
+
+    bands_df = pl.DataFrame(
+        bands_dict,
         schema={"y1": pl.Float64, "y2": pl.Float64, "color": pl.Utf8}
     )
 
@@ -239,31 +303,51 @@ with tab_section_details:
 
     levels_max = kayaking_levels_section.filter(pl.col("flow_type") == "max").select('mountain_time', 'river_level')
 
+    chart_domain = [bands_df['y1'].min(), bands_df['y2'].max(),]
+
     bands = (
         alt.Chart(bands_df)
         .mark_rect(opacity=0.6)
         .encode(
-            x=alt.X("x_min:T"),
-            x2=alt.X2("x_max:T"),
-            y=alt.Y("y1:Q"),
-            y2=alt.Y2("y2:Q"),
-            color=alt.Color("color:N", scale=None),
-        )
+        x=alt.X("x_min:T",axis=alt.Axis(title="Date",)),
+        x2=alt.X2("x_max:T"),
+        y=alt.Y("y1:Q",
+                axis=alt.Axis(title="River Level"),
+                scale=alt.Scale(domain=chart_domain,clamp=True)),
+        y2=alt.Y2("y2:Q",),
+        color=alt.Color("color:N", scale=None),
+    )
+    .properties(
+    title={
+      "text": [f"{river_details_section_option} Flows"],
+      "color": "black",
+      "anchor": "start",
+    }
+)
     )
 
-    line = (
+    line_standard = (
         alt.Chart(levels_standard)
         .mark_line(color="#2c3e6b", strokeWidth=2)
-        .encode(x="mountain_time:T", y=alt.Y("river_level:Q",# scale=alt.Scale(domain=[0, 7000])
+        .encode(x=alt.X("mountain_time:T",axis=alt.Axis(title='Date')),
+                y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title='River Level')
                                              ))
     )
-    st.altair_chart(bands)
-    st.altair_chart(line)
 
-    chart = (bands + line)
-    st.altair_chart(chart, )#width='stretch')
-    chart = alt.layer(bands, line)
-    st.altair_chart(chart)
+    if not levels_max.is_empty():
+        line_max = (
+            alt.Chart(levels_max)
+            .mark_line(color="#e67e22", strokeWidth=2, strokeDash=[5, 5])
+            .encode(x=alt.X("mountain_time:T",axis=alt.Axis(title='Date')),
+                    y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title='River Level')
+                                                 ))
+        )
+        chart = (line_standard + line_max + bands)
+
+    else:
+        chart = (line_standard + bands)
+
+    st.altair_chart(chart,width='stretch',height=500)
 
 
 with tab_gauges:
