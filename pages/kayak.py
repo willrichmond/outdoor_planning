@@ -39,7 +39,7 @@ def load_static_data() -> Tuple[pl.DataFrame, List[Dict[str, Any]], pl.DataFrame
     return pl.DataFrame(section_list), gauge_list, pl.DataFrame(river_list)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=1800)
 def run_river_flow_apis(
     gauge_list: List[Dict[str, Any]],
     section_df: pl.DataFrame,
@@ -189,11 +189,6 @@ with tab_section_details:
         options=section_df["section_name"].to_list(),
     )
 
-    river_details_overlay_option = st.selectbox(
-        label="Select chart overlay:",
-        options=("Flow Range", "Creekboat", "Halfslice", "Playboat"),
-    )
-
     kayaking_levels_section = (
         kayaking_levels_range.lazy()
         .select("section_name", "mountain_time", "river_level", "flow_type")
@@ -210,43 +205,214 @@ with tab_section_details:
         pl.col("section_name") == river_details_section_option
     ).to_dicts()[0]
     st.write(f"### {river_details_section_option} Details")
-    st.text(section_overlay)
-    st.dataframe(kayaking_levels_section)
 
-    line_df = pl.DataFrame(
-        {
-            "x": list(range(100)),
-            "flow": [3600 + i * 15 + (i % 7) * 30 for i in range(100)],
-        }
+    st.link_button("American Whitewater", section_overlay["american_whitewater"])
+
+    if section_overlay["link"]:
+        with st.expander("Relevant Links"):
+            for section_link in section_overlay["link"]:
+                st.link_button("Section Info", section_link)
+
+    with st.expander("Map"):
+        st.text(f"Put in: {section_overlay['lat']}, {section_overlay['lon']}")
+        st.map(
+            pl.DataFrame(
+                {"lat": [section_overlay["lat"]], "lon": [section_overlay["lon"]]}
+            ),
+            height=300,
+        )
+
+    st.dataframe(
+        pd.DataFrame(
+            {"level": ["Too Low", "Low", "Medium", "High", "Too High"]}
+        ).T.style.map(lambda val: level_colors.get(val, ""))
     )
+
+    river_level_min = kayaking_levels_section["river_level"].min()
+    river_level_max = kayaking_levels_section["river_level"].max()
+
+    if river_level_max < section_overlay["min_level"]:
+        bands_dict = {
+            "y1": [
+                0,
+                section_overlay["min_level"],
+            ],
+            "y2": [
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+            ],
+            "color": [
+                "#E74C3C",
+                "#89CFF0",
+            ],
+        }
+
+    elif river_level_min > section_overlay["max_level"]:
+        bands_dict = {
+            "y1": [section_overlay["high_level"], section_overlay["max_level"]],
+            "y2": [section_overlay["max_level"], (river_level_max * 1.1)],
+            "color": ["#FFEA00", "#E74C3C"],
+        }
+    elif (
+        river_level_min > section_overlay["min_level"]
+        and river_level_max < section_overlay["high_level"]
+    ):
+        bands_dict = {
+            "y1": [
+                (section_overlay["min_level"] / 2),
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+            ],
+            "y2": [
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                (section_overlay["high_level"] * 2 + section_overlay["max_level"]) / 3,
+            ],
+            "color": [
+                "#E74C3C",
+                "#89CFF0",
+                "#2ECC71",
+                "#FFEA00",
+            ],
+        }
+
+    elif river_level_min > section_overlay["medium_level"]:
+        bands_dict = {
+            "y1": [
+                (section_overlay["min_level"] + section_overlay["medium_level"]) / 2,
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+            ],
+            "y2": [
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+                (section_overlay["max_level"] * 1.1),
+            ],
+            "color": ["#89CFF0", "#2ECC71", "#FFEA00", "#E74C3C"],
+        }
+
+    else:
+        bands_dict = {
+            "y1": [
+                0,
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+            ],
+            "y2": [
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+                (section_overlay["max_level"] * 1.1),
+            ],
+            "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00", "#E74C3C"],
+        }
 
     bands_df = pl.DataFrame(
-        {
-            "y1": [0, 800, 2000, 4000],
-            "y2": [800, 2000, 4000, 7000],
-            "color": ["#ff8080", "#90ee90", "#60d060", "#22bb22"],
-        }
+        bands_dict, schema={"y1": pl.Float64, "y2": pl.Float64, "color": pl.Utf8}
     )
+
+    levels_standard = kayaking_levels_section.filter(
+        pl.col("flow_type") == "standard"
+    ).select("mountain_time", "river_level")
+    x_min = levels_standard["mountain_time"].min()
+    x_max = levels_standard["mountain_time"].max()
+
+    bands_df = bands_df.with_columns(
+        [
+            pl.lit(x_min).alias("x_min"),
+            pl.lit(x_max).alias("x_max"),
+        ]
+    )
+
+    levels_max = kayaking_levels_section.filter(pl.col("flow_type") == "max").select(
+        "mountain_time", "river_level"
+    )
+
+    chart_domain = [
+        bands_df["y1"].min(),
+        bands_df["y2"].max(),
+    ]
 
     bands = (
         alt.Chart(bands_df)
         .mark_rect(opacity=0.6)
         .encode(
-            y=alt.Y("y1:Q"),
-            y2=alt.Y2("y2:Q"),
+            x=alt.X(
+                "x_min:T",
+                axis=alt.Axis(
+                    title="Date",
+                ),
+            ),
+            x2=alt.X2("x_max:T"),
+            y=alt.Y(
+                "y1:Q",
+                axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+                scale=alt.Scale(domain=chart_domain, clamp=True),
+            ),
+            y2=alt.Y2(
+                "y2:Q",
+            ),
             color=alt.Color("color:N", scale=None),
+        )
+        .properties(
+            title={
+                "text": [f"{river_details_section_option} Flows"],
+                "color": "black",
+                "anchor": "start",
+            }
         )
     )
 
-    line = (
-        alt.Chart(line_df)
+    line_standard = (
+        alt.Chart(levels_standard)
         .mark_line(color="#2c3e6b", strokeWidth=2)
-        .encode(x="x:Q", y=alt.Y("flow:Q", scale=alt.Scale(domain=[0, 7000])))
+        .encode(
+            x=alt.X("mountain_time:T", axis=alt.Axis(title="Date")),
+            y=alt.Y(
+                "river_level:Q",
+                scale=alt.Scale(domain=chart_domain, clamp=True),
+                axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+            ),
+        )
     )
 
-    chart = (bands + line).properties(width=700, height=400)
+    if not levels_max.is_empty():
+        line_max = (
+            alt.Chart(levels_max)
+            .mark_line(
+                color="#e67e22",
+                strokeWidth=2,
+            )
+            .encode(
+                x=alt.X("mountain_time:T", axis=alt.Axis(title="Date")),
+                y=alt.Y(
+                    "river_level:Q",
+                    scale=alt.Scale(domain=chart_domain, clamp=True),
+                    axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+                ),
+            )
+        )
+        chart = line_standard + line_max + bands
 
-    # st.altair_chart(chart, width='stretch')
+    else:
+        chart = line_standard + bands
+
+    st.altair_chart(chart, width="stretch", height=500)
+
+    with st.expander("Flow levels data table"):
+        st.dataframe(kayaking_levels_section)
+
+    if section_overlay["video"]:
+        with st.expander("Video"):
+            for section_video in section_overlay["video"]:
+                st.video(section_video)
 
 
 with tab_gauges:
