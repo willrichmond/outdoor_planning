@@ -213,12 +213,6 @@ section_list = [
         "lon": -116.11632,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4360/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 2,
@@ -234,12 +228,6 @@ section_list = [
         "lon": -116.17994,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4156/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 3,
@@ -255,12 +243,6 @@ section_list = [
         "lon": -116.19629,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4156/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 4,
@@ -276,12 +258,6 @@ section_list = [
         "lon": -116.19005,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/587/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 5,
@@ -297,12 +273,6 @@ section_list = [
         "lon": -116.11551982370194,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/592/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 6,
@@ -318,12 +288,6 @@ section_list = [
         "lon": -115.16628540704463,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/593/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 7,
@@ -339,12 +303,6 @@ section_list = [
         "lon": -115.47284235254644,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/593/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 8,
@@ -360,12 +318,6 @@ section_list = [
         "lon": -115.65782,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/594/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 9,
@@ -378,15 +330,12 @@ section_list = [
         "high_level": 5,
         "max_level": 7,
         "lat": 45.025750972341534,
-        "lon":  -115.70752924991736,
+        "lon": -115.70752924991736,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/621/main",
         "state": "Idaho",
         "link_1": "https://www.cacreeks.com/mfsfsalm.htm",
         "link_2": "https://www.oregonkayaking.net/rivers/sf_salmon_wilderness/sf_salmon_wilderness.html",
         "link_3": "https://www.whitewaterguidebook.com/idaho/south-fork-salmon-river/",
-
-
-
     },
     {
         "section_id": 10,
@@ -402,12 +351,6 @@ section_list = [
         "lon": -116.04273,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/596/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 11,
@@ -423,12 +366,6 @@ section_list = [
         "lon": -115.65993042333568,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/3087/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 12,
@@ -444,12 +381,6 @@ section_list = [
         "lon": -116.15410279591201,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/1464/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 13,
@@ -465,12 +396,6 @@ section_list = [
         "lon": -116.31156968158616,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/613/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 14,
@@ -486,12 +411,6 @@ section_list = [
         "lon": -116.3156717788237,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/1464/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 15,
@@ -507,12 +426,6 @@ section_list = [
         "lon": -116.30109898821945,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/566/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 16,
@@ -529,11 +442,6 @@ section_list = [
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/569/main",
         "state": "Idaho",
         "link_1": "https://docs.google.com/spreadsheets/d/1mRQGuui8FOxZkd8GaWBucpU4-5n5Qlobp5tqRziM-lk/edit?gid=658837342#gid=658837342",
-
-
-
-
-
     },
     {
         "section_id": 17,
@@ -549,12 +457,6 @@ section_list = [
         "lon": -115.30701702760331,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/570/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 18,
@@ -570,12 +472,6 @@ section_list = [
         "lon": -116.2345402244785,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/3135/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 19,
@@ -591,12 +487,6 @@ section_list = [
         "lon": -116.14464778029726,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/3135/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 20,
@@ -612,12 +502,6 @@ section_list = [
         "lon": -117.16881062503798,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/3764/main",
         "state": "Oregon",
-
-
-
-
-
-
     },
     {
         "section_id": 21,
@@ -633,12 +517,6 @@ section_list = [
         "lon": -115.17008544598806,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/618/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 22,
@@ -656,10 +534,6 @@ section_list = [
         "state": "Idaho",
         "link_1": "https://www.whitewaterguidebook.com/idaho/snake-river-murtaugh/",
         "link_2": "https://www.oregonkayaking.net/rivers/murtaugh/murtaugh.html",
-
-
-
-
     },
     {
         "section_id": 23,
@@ -675,12 +549,6 @@ section_list = [
         "lon": -115.81296355443007,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4121/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 24,
@@ -696,12 +564,6 @@ section_list = [
         "lon": -115.64698219299316,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/533/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 25,
@@ -717,12 +579,6 @@ section_list = [
         "lon": -116.03201866149902,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/591/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 26,
@@ -738,12 +594,6 @@ section_list = [
         "lon": -115.89900255203247,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/4120/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
     {
         "section_id": 27,
@@ -759,11 +609,5 @@ section_list = [
         "lon": -116.0314784831979,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/11051/main",
         "state": "Idaho",
-
-
-
-
-
-
     },
 ]
