@@ -217,9 +217,17 @@ with tab_section_details:
 
     bands_df = pl.DataFrame(
         {
-            "y1": [0, 800, 2000, 4000],
-            "y2": [800, 2000, 4000, 7000],
-            "color": ["#ff8080", "#90ee90", "#60d060", "#22bb22"],
+            "y1": [0, section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   section_overlay['max_level'],
+                   ],
+            "y2": [section_overlay['min_level'],
+                   section_overlay['medium_level'],
+                   section_overlay['high_level'],
+                   section_overlay['max_level'],
+                   (section_overlay['max_level']*1.1)],
+            "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00",'#E74C3C'],
         }
     )
 
@@ -234,14 +242,14 @@ with tab_section_details:
     )
 
     line = (
-        alt.Chart(line_df)
+        alt.Chart(kayaking_levels_section)
         .mark_line(color="#2c3e6b", strokeWidth=2)
         .encode(x="x:Q", y=alt.Y("flow:Q", scale=alt.Scale(domain=[0, 7000])))
     )
 
     chart = (bands + line).properties(width=700, height=400)
 
-    # st.altair_chart(chart, width='stretch')
+    st.altair_chart(chart, width='stretch')
 
 
 with tab_gauges:
