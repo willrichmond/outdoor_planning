@@ -205,13 +205,31 @@ with tab_section_details:
         pl.col("section_name") == river_details_section_option
     ).to_dicts()[0]
     st.write(f"### {river_details_section_option} Details")
+
+
+
+
+    st.link_button("American Whitewater", section_overlay['american_whitewater'])
+
+    if section_overlay['link_1'] or section_overlay['link_2'] or section_overlay['link_3']:
+        with st.expander("Relevant Links"):
+            if section_overlay['link_1']:
+                st.link_button("Section Info", section_overlay['link_1'])
+            if section_overlay['link_2']:
+                st.link_button("Section Info 2", section_overlay['link_2'])
+            if section_overlay['link_3']:
+                st.link_button("Section Info 3", section_overlay['link_3'])
+
+    with st.expander("Map"):
+        st.text(f"Put in: {section_overlay['lat']}, {section_overlay['lon']}")
+        st.map(pl.DataFrame({'lat': [section_overlay['lat']], 'lon': [section_overlay['lon']]}),height=300)
+
+
     st.dataframe(
         pd.DataFrame(
             {"level": ["Too Low", "Low", "Medium", "High", "Too High"]}
         ).T.style.map(lambda val: level_colors.get(val, ""))
     )
-    st.text(section_overlay)
-    st.dataframe(kayaking_levels_section)
 
     river_level_min = kayaking_levels_section['river_level'].min()
     river_level_max = kayaking_levels_section['river_level'].max()
@@ -255,7 +273,7 @@ with tab_section_details:
     elif river_level_min > section_overlay['medium_level']:
         bands_dict ={
             "y1": [
-                   section_overlay['min_level'],
+                   (section_overlay['min_level'] +section_overlay['medium_level'])/2,
                    section_overlay['medium_level'],
                    section_overlay['high_level'],
                    section_overlay['max_level'],
@@ -312,7 +330,7 @@ with tab_section_details:
         x=alt.X("x_min:T",axis=alt.Axis(title="Date",)),
         x2=alt.X2("x_max:T"),
         y=alt.Y("y1:Q",
-                axis=alt.Axis(title="River Level"),
+                axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
                 scale=alt.Scale(domain=chart_domain,clamp=True)),
         y2=alt.Y2("y2:Q",),
         color=alt.Color("color:N", scale=None),
@@ -330,16 +348,16 @@ with tab_section_details:
         alt.Chart(levels_standard)
         .mark_line(color="#2c3e6b", strokeWidth=2)
         .encode(x=alt.X("mountain_time:T",axis=alt.Axis(title='Date')),
-                y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title='River Level')
+                y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}")
                                              ))
     )
 
     if not levels_max.is_empty():
         line_max = (
             alt.Chart(levels_max)
-            .mark_line(color="#e67e22", strokeWidth=2, strokeDash=[5, 5])
+            .mark_line(color="#e67e22", strokeWidth=2,)
             .encode(x=alt.X("mountain_time:T",axis=alt.Axis(title='Date')),
-                    y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title='River Level')
+                    y=alt.Y("river_level:Q",scale=alt.Scale(domain=chart_domain,clamp=True),axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}")
                                                  ))
         )
         chart = (line_standard + line_max + bands)
@@ -348,6 +366,22 @@ with tab_section_details:
         chart = (line_standard + bands)
 
     st.altair_chart(chart,width='stretch',height=500)
+
+    with st.expander("Flow levels data table"):
+        st.dataframe(kayaking_levels_section)
+
+    if section_overlay['video_1'] or section_overlay['video_2'] or section_overlay['video_3'] or section_overlay['video_4'] or section_overlay['video_5']:
+        with st.expander("Video"):
+            if section_overlay['video_1']:
+                st.video(section_overlay['video_1'])
+            if section_overlay['video_2']:
+                st.video(section_overlay['video_2'])
+            if section_overlay['video_3']:
+                st.video(section_overlay['video_3'])
+            if section_overlay['video_4']:
+                st.video(section_overlay['video_4'])
+            if section_overlay['video_5']:
+                st.video(section_overlay['video_5'])
 
 
 with tab_gauges:
