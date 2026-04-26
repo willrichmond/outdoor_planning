@@ -208,13 +208,6 @@ with tab_section_details:
     st.text(section_overlay)
     st.dataframe(kayaking_levels_section)
 
-    line_df = pl.DataFrame(
-        {
-            "x": list(range(100)),
-            "flow": [3600 + i * 15 + (i % 7) * 30 for i in range(100)],
-        }
-    )
-
     bands_df = pl.DataFrame(
         {
             "y1": [0, section_overlay['min_level'],
@@ -228,13 +221,30 @@ with tab_section_details:
                    section_overlay['max_level'],
                    (section_overlay['max_level']*1.1)],
             "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00",'#E74C3C'],
-        }
+        },
+        schema={"y1": pl.Float64, "y2": pl.Float64, "color": pl.Utf8}
     )
+
+
+
+    levels_standard = kayaking_levels_section.filter(pl.col("flow_type") == "standard").select('mountain_time', 'river_level')
+    x_min = levels_standard["mountain_time"].min()
+    x_max = levels_standard["mountain_time"].max()
+
+    bands_df = bands_df.with_columns([
+        pl.lit(x_min).alias("x_min"),
+        pl.lit(x_max).alias("x_max"),
+    ])
+
+
+    levels_max = kayaking_levels_section.filter(pl.col("flow_type") == "max").select('mountain_time', 'river_level')
 
     bands = (
         alt.Chart(bands_df)
         .mark_rect(opacity=0.6)
         .encode(
+            x=alt.X("x_min:T"),
+            x2=alt.X2("x_max:T"),
             y=alt.Y("y1:Q"),
             y2=alt.Y2("y2:Q"),
             color=alt.Color("color:N", scale=None),
@@ -242,14 +252,18 @@ with tab_section_details:
     )
 
     line = (
-        alt.Chart(kayaking_levels_section)
+        alt.Chart(levels_standard)
         .mark_line(color="#2c3e6b", strokeWidth=2)
-        .encode(x="mountain_time:Q", y=alt.Y("river_level:Q", scale=alt.Scale(domain=[0, 7000])))
+        .encode(x="mountain_time:T", y=alt.Y("river_level:Q",# scale=alt.Scale(domain=[0, 7000])
+                                             ))
     )
+    st.altair_chart(bands)
+    st.altair_chart(line)
 
-    chart = (bands + line).properties(width=700, height=400)
-
-    st.altair_chart(chart, width='stretch')
+    chart = (bands + line)
+    st.altair_chart(chart, )#width='stretch')
+    chart = alt.layer(bands, line)
+    st.altair_chart(chart)
 
 
 with tab_gauges:
