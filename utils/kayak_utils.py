@@ -937,12 +937,6 @@ def get_kayaking_levels_range(
             - 'medium_level' (float | None)
             - 'high_level' (float | None)
             - 'max_level' (float | None)
-            - 'min_creek_boat' (float | None)
-            - 'max_creek_boat' (float | None)
-            - 'min_half_slice' (float | None)
-            - 'max_half_slice' (float | None)
-            - 'min_play_boat' (float | None)
-            - 'max_play_boat' (float | None)
 
     Returns:
         A Polars DataFrame with one row per
@@ -993,12 +987,6 @@ def get_kayaking_levels_range(
                 "medium_level",
                 "high_level",
                 "max_level",
-                "min_creek_boat",
-                "max_creek_boat",
-                "min_half_slice",
-                "max_half_slice",
-                "min_play_boat",
-                "max_play_boat",
             ),
             on=["section_id", "flow_unit"],
         )
@@ -1012,45 +1000,12 @@ def get_kayaking_levels_range(
             .when(pl.col("river_level") < pl.col("max_level"))
             .then(pl.lit("High"))
             .otherwise(pl.lit("Too High")),
-            run_creekboat=pl.when(pl.col("min_creek_boat").is_null())
-            .then(pl.lit(0))
-            .when(
-                pl.col("river_level").is_between(
-                    pl.col("min_creek_boat"), pl.col("max_creek_boat")
-                )
-            )
-            .then(pl.lit(1))
-            .otherwise(pl.lit(0)),
-            run_halfslice=pl.when(pl.col("min_half_slice").is_null())
-            .then(pl.lit(0))
-            .when(
-                pl.col("river_level").is_between(
-                    pl.col("min_half_slice"), pl.col("max_half_slice")
-                )
-            )
-            .then(pl.lit(1))
-            .otherwise(pl.lit(0)),
-            run_playboat=pl.when(pl.col("min_play_boat").is_null())
-            .then(pl.lit(0))
-            .when(
-                pl.col("river_level").is_between(
-                    pl.col("min_play_boat"), pl.col("max_play_boat")
-                )
-            )
-            .then(pl.lit(1))
-            .otherwise(pl.lit(0)),
         )
         .drop(
             "min_level",
             "medium_level",
             "high_level",
             "max_level",
-            "min_creek_boat",
-            "max_creek_boat",
-            "min_half_slice",
-            "max_half_slice",
-            "min_play_boat",
-            "max_play_boat",
         )
         .collect()
     )

@@ -351,6 +351,7 @@ section_list = [
         "lon": -116.04273,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/596/main",
         "state": "Idaho",
+        'video_1':'https://www.youtube.com/watch?v=y2JDLtvURPs',
     },
     {
         "section_id": 11,
