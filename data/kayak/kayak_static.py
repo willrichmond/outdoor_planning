@@ -273,13 +273,13 @@ section_list = [
         "lon": -116.11551982370194,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/592/main",
         "state": "Idaho",
-        'video':['https://www.youtube.com/watch?v=F4wAC3s0Qaw',
-                 'https://www.youtube.com/watch?v=T2FY2ngnxc0',
-                 'https://www.youtube.com/watch?v=KQUpsJBmuzs',
-                 'https://www.youtube.com/watch?v=cn83x4cpqAs',
-                 'https://www.youtube.com/watch?v=5E5fw_D3Z0Y',
-                 ]
-
+        "video": [
+            "https://www.youtube.com/watch?v=F4wAC3s0Qaw",
+            "https://www.youtube.com/watch?v=T2FY2ngnxc0",
+            "https://www.youtube.com/watch?v=KQUpsJBmuzs",
+            "https://www.youtube.com/watch?v=cn83x4cpqAs",
+            "https://www.youtube.com/watch?v=5E5fw_D3Z0Y",
+        ],
     },
     {
         "section_id": 6,
@@ -325,7 +325,9 @@ section_list = [
         "lon": -115.65782,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/594/main",
         "state": "Idaho",
-        'video':['https://www.youtube.com/watch?v=qBshWXJ54CA',]
+        "video": [
+            "https://www.youtube.com/watch?v=qBshWXJ54CA",
+        ],
     },
     {
         "section_id": 9,
@@ -341,17 +343,18 @@ section_list = [
         "lon": -115.70752924991736,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/621/main",
         "state": "Idaho",
-        'link':["https://www.cacreeks.com/mfsfsalm.htm",
-                "https://www.oregonkayaking.net/rivers/sf_salmon_wilderness/sf_salmon_wilderness.html",
-                "https://www.whitewaterguidebook.com/idaho/south-fork-salmon-river/",
-                ],
-        'video':['https://www.youtube.com/watch?v=Ufna2nbXVjo',
-                 'https://www.youtube.com/watch?v=NXGSq6XS0c4',
-                 'https://www.youtube.com/watch?v=uZoslej2xjM',
-                 'https://www.youtube.com/watch?v=elx8Z9RNZkw',
-                 'https://www.youtube.com/watch?v=Wwbfz8lj0ow',
-                 ],
-
+        "link": [
+            "https://www.cacreeks.com/mfsfsalm.htm",
+            "https://www.oregonkayaking.net/rivers/sf_salmon_wilderness/sf_salmon_wilderness.html",
+            "https://www.whitewaterguidebook.com/idaho/south-fork-salmon-river/",
+        ],
+        "video": [
+            "https://www.youtube.com/watch?v=Ufna2nbXVjo",
+            "https://www.youtube.com/watch?v=NXGSq6XS0c4",
+            "https://www.youtube.com/watch?v=uZoslej2xjM",
+            "https://www.youtube.com/watch?v=elx8Z9RNZkw",
+            "https://www.youtube.com/watch?v=Wwbfz8lj0ow",
+        ],
     },
     {
         "section_id": 10,
@@ -367,15 +370,14 @@ section_list = [
         "lon": -116.04273,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/596/main",
         "state": "Idaho",
-        'video':['https://www.youtube.com/watch?v=y2JDLtvURPs',
-                 'https://www.youtube.com/watch?v=EV293SIrfxA',
-                 'https://www.youtube.com/watch?v=9L0KsoEBN90',
-                 'https://www.youtube.com/watch?v=BCq61US91Mk',
-                 'https://www.youtube.com/watch?v=wZ6EQBSSHkI',
-                 'https://www.youtube.com/watch?v=lX9Q-32TT8s',
-                 ]
-
-
+        "video": [
+            "https://www.youtube.com/watch?v=y2JDLtvURPs",
+            "https://www.youtube.com/watch?v=EV293SIrfxA",
+            "https://www.youtube.com/watch?v=9L0KsoEBN90",
+            "https://www.youtube.com/watch?v=BCq61US91Mk",
+            "https://www.youtube.com/watch?v=wZ6EQBSSHkI",
+            "https://www.youtube.com/watch?v=lX9Q-32TT8s",
+        ],
     },
     {
         "section_id": 11,
@@ -451,7 +453,11 @@ section_list = [
         "lon": -116.30109898821945,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/566/main",
         "state": "Idaho",
-        'video':['https://www.youtube.com/watch?v=XyLBKL08GuY','https://www.youtube.com/watch?v=3TDSAdJNf48','https://www.youtube.com/watch?v=Sgvq-wdEIj4',],
+        "video": [
+            "https://www.youtube.com/watch?v=XyLBKL08GuY",
+            "https://www.youtube.com/watch?v=3TDSAdJNf48",
+            "https://www.youtube.com/watch?v=Sgvq-wdEIj4",
+        ],
     },
     {
         "section_id": 16,
@@ -467,8 +473,15 @@ section_list = [
         "lon": -115.0790730835057,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/569/main",
         "state": "Idaho",
-        "link": ["https://docs.google.com/spreadsheets/d/1mRQGuui8FOxZkd8GaWBucpU4-5n5Qlobp5tqRziM-lk/edit?gid=658837342#gid=658837342",],
-        'video':['https://www.youtube.com/watch?v=aninJaYapI0','https://www.youtube.com/watch?v=MiyUxEMoM2s','https://www.youtube.com/watch?v=W6FAd0te2qk','https://www.youtube.com/watch?v=l9DKDqLYpvY',]
+        "link": [
+            "https://docs.google.com/spreadsheets/d/1mRQGuui8FOxZkd8GaWBucpU4-5n5Qlobp5tqRziM-lk/edit?gid=658837342#gid=658837342",
+        ],
+        "video": [
+            "https://www.youtube.com/watch?v=aninJaYapI0",
+            "https://www.youtube.com/watch?v=MiyUxEMoM2s",
+            "https://www.youtube.com/watch?v=W6FAd0te2qk",
+            "https://www.youtube.com/watch?v=l9DKDqLYpvY",
+        ],
     },
     {
         "section_id": 17,
@@ -484,7 +497,10 @@ section_list = [
         "lon": -115.30701702760331,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/570/main",
         "state": "Idaho",
-        'video':['https://www.youtube.com/watch?v=rO_yGeSmIqc','https://www.youtube.com/watch?v=Vw2WSLyZykE',],
+        "video": [
+            "https://www.youtube.com/watch?v=rO_yGeSmIqc",
+            "https://www.youtube.com/watch?v=Vw2WSLyZykE",
+        ],
     },
     {
         "section_id": 18,
@@ -545,7 +561,11 @@ section_list = [
         "lon": -115.17008544598806,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/618/main",
         "state": "Idaho",
-        "video":['https://www.youtube.com/watch?v=eq8edaWxdAM','https://www.youtube.com/watch?v=g6ccbtIQY3U','https://www.youtube.com/watch?v=M9Mk-AYw2fI',]
+        "video": [
+            "https://www.youtube.com/watch?v=eq8edaWxdAM",
+            "https://www.youtube.com/watch?v=g6ccbtIQY3U",
+            "https://www.youtube.com/watch?v=M9Mk-AYw2fI",
+        ],
     },
     {
         "section_id": 22,
@@ -561,9 +581,16 @@ section_list = [
         "lon": -114.15338370212318,
         "american_whitewater": "https://www.americanwhitewater.org/content/River/view/river-detail/631/main",
         "state": "Idaho",
-        "link": ["https://www.whitewaterguidebook.com/idaho/snake-river-murtaugh/","https://www.oregonkayaking.net/rivers/murtaugh/murtaugh.html",],
-        'video':['https://www.youtube.com/watch?v=pNkSCPHRA9k','https://www.youtube.com/watch?v=24O2zdH3bxQ','https://www.youtube.com/watch?v=dwFAPIqpDSg','https://www.youtube.com/watch?v=Wa2HcFFjXyI',]
-
+        "link": [
+            "https://www.whitewaterguidebook.com/idaho/snake-river-murtaugh/",
+            "https://www.oregonkayaking.net/rivers/murtaugh/murtaugh.html",
+        ],
+        "video": [
+            "https://www.youtube.com/watch?v=pNkSCPHRA9k",
+            "https://www.youtube.com/watch?v=24O2zdH3bxQ",
+            "https://www.youtube.com/watch?v=dwFAPIqpDSg",
+            "https://www.youtube.com/watch?v=Wa2HcFFjXyI",
+        ],
     },
     {
         "section_id": 23,

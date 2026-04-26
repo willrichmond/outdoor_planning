@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Literal, Tuple, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import streamlit as st
 
+
 def get_noaa_flow_forecast(
     gauge_dict: Dict[str, Any],
 ) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Any]]:
@@ -199,7 +200,7 @@ def get_usgs_observed_flow(
             "time": "PT24H",
             "limit": 1000,
             "f": "json",
-            'api_key':st.secrets["USGS_API_KEY"],
+            "api_key": st.secrets["USGS_API_KEY"],
         }
 
         url = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items"
