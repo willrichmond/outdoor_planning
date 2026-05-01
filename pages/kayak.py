@@ -166,6 +166,7 @@ with tab_forecast:
         default=["Staircase", "The Canyon"],
     )
 
+
     kayaking_levels_filtered = (
         kayaking_levels_range.lazy()
         .select("section_name", "mountain_time", "river_level", "flow_type")
@@ -189,6 +190,71 @@ with tab_forecast:
 
     st.header("Forecast Data Table")
     st.dataframe(kayaking_levels_filtered)
+
+    st.header("Weather Forecast for Sections")
+
+    st.line_chart(
+            section_df.filter(
+        pl.col("section_name").is_in(forecast_section_options)
+    ).select("section_id", "section_name").join(section_point_weather_forecast, on="section_id"),
+            x="start",
+            y="temperature",
+            color="section_name",
+            width="stretch",
+            height=500,
+        )
+
+    st.area_chart(
+            section_df.filter(
+        pl.col("section_name").is_in(forecast_section_options)
+    ).select("section_id", "section_name").join(section_point_weather_forecast, on="section_id"),
+            x="start",
+            y="temperature",
+            color="section_name",
+            width="stretch",
+            height=500,
+        )
+
+    data = pl.DataFrame({
+    "section": ["a", "a", "b", "b"],
+    "date": ["2026-05-01", "2026-05-02", "2026-05-01", "2026-05-02"],
+    "low": [35, 40, 28, 33],
+    "high": [42, 90, 55, 60],
+})
+
+    st.dataframe(data)
+
+    base = alt.Chart(data).encode(
+    x=alt.X("date:T", axis=alt.Axis(title="Date")),
+    xOffset=alt.XOffset("section:N"),
+    y=alt.Y("low:Q", axis=alt.Axis(title="Temperature (°F)")),
+    y2=alt.Y2("high:Q"),
+    color=alt.Color("section:N"),
+)
+
+    rule = base.mark_rule(strokeWidth=2)
+    low_point = base.mark_point(filled=True, size=60).encode(y="low:Q")
+    high_point = base.mark_point(filled=True, size=60).encode(y="high:Q")
+
+    chart = rule + low_point + high_point
+
+    st.altair_chart(chart, width="stretch", height=500)
+
+
+    chart = alt.Chart(section_df.filter(
+        pl.col("section_name").is_in(forecast_section_options)
+    ).select("section_id", "section_name").join(section_point_weather_forecast, on="section_id")).mark_area().encode(
+    x=alt.X("start:T", axis=alt.Axis(title="Date")),
+    y=alt.Y(
+        "probability_precipitation:Q",
+        axis=alt.Axis(title="Precipitation Probability", labelExpr="datum.value + '%'"),
+        scale=alt.Scale(domain=[0, 100]),
+        stack=None,
+    ),
+    color=alt.Color("section_name:N"),
+    )
+
+    st.altair_chart(chart, width='stretch')
 
 with tab_section_details:
     river_details_section_option = st.selectbox(
@@ -271,6 +337,24 @@ with tab_section_details:
         )
 
         if selected_point_weather_forecast is not None and len(selected_point_weather_forecast) > 0:
+
+            st.line_chart(
+            selected_point_weather_forecast,
+            x="start",
+            y="temperature",
+            width="stretch",
+            height=500,
+        )
+            st.area_chart(
+            selected_point_weather_forecast,
+            x="start",
+            y="temperature",
+            width="stretch",
+            height=500,
+        )
+
+
+
             st.dataframe(selected_point_weather_forecast,
                          column_config={
         "icon": st.column_config.ImageColumn(
