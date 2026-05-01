@@ -218,7 +218,7 @@ with tab_section_details:
     with st.expander("Map"):
         st.text(f"Put in: {section_overlay['lat']}, {section_overlay['lon']}")
 
-        if section_overlay['notes']:
+        if section_overlay["notes"]:
             st.text(f"Notes: {section_overlay['notes']}")
 
         st.map(
@@ -236,27 +236,24 @@ with tab_section_details:
 
     # Creating the flow color bands
     flow_bands = get_section_color_flow_bands(
-    kayaking_levels_section=kayaking_levels_section,
-    section_overlay=section_overlay
+        kayaking_levels_section=kayaking_levels_section, section_overlay=section_overlay
     )
-
 
     levels_standard = kayaking_levels_section.filter(
         pl.col("flow_type") == "standard"
     ).select("mountain_time", "river_level")
 
-
     levels_max = kayaking_levels_section.filter(pl.col("flow_type") == "max").select(
         "mountain_time", "river_level"
     )
 
-    section_flow_chart = get_section_flow_chart(flow_bands=flow_bands,
-                                                levels_standard=levels_standard,
-                                                levels_max=levels_max,
-                                                section_overlay=section_overlay,
-                                                river_details_section_option=river_details_section_option)
-
-
+    section_flow_chart = get_section_flow_chart(
+        flow_bands=flow_bands,
+        levels_standard=levels_standard,
+        levels_max=levels_max,
+        section_overlay=section_overlay,
+        river_details_section_option=river_details_section_option,
+    )
 
     st.altair_chart(section_flow_chart, width="stretch", height=500)
 

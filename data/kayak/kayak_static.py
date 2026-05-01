@@ -476,7 +476,7 @@ section_list = [
         "link": [
             "https://docs.google.com/spreadsheets/d/1mRQGuui8FOxZkd8GaWBucpU4-5n5Qlobp5tqRziM-lk/edit?gid=658837342#gid=658837342",
         ],
-        "notes":'Put-in is White Pine/Indian Grave, mile post 138',
+        "notes": "Put-in is White Pine/Indian Grave, mile post 138",
         "video": [
             "https://www.youtube.com/watch?v=aninJaYapI0",
             "https://www.youtube.com/watch?v=MiyUxEMoM2s",

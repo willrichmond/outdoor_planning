@@ -1381,7 +1381,14 @@ def get_section_color_flow_bands(
         ]
     )
 
-def get_section_flow_chart(flow_bands: pl.DataFrame, levels_standard: pl.DataFrame, levels_max: pl.DataFrame, section_overlay: dict, river_details_section_option: str) -> alt.Chart:
+
+def get_section_flow_chart(
+    flow_bands: pl.DataFrame,
+    levels_standard: pl.DataFrame,
+    levels_max: pl.DataFrame,
+    section_overlay: dict,
+    river_details_section_option: str,
+) -> alt.Chart:
     """Build an Altair chart of river flow levels with colored background bands.
 
     Combines a colored band layer (from get_section_color_flow_bands_df) with

@@ -1,6 +1,7 @@
 import polars as pl
 import requests
 
+
 def get_noaa_point_forecast_periods(lat: float, lon: float) -> list[dict]:
     """Fetch forecast periods from the NOAA Weather API for a given coordinate.
 
@@ -38,7 +39,9 @@ def get_noaa_point_forecast_periods(lat: float, lon: float) -> list[dict]:
     grid_y = props["gridY"]
 
     # Step 2: Fetch the forecast
-    forecast_url = f"https://api.weather.gov/gridpoints/{grid_id}/{grid_x},{grid_y}/forecast"
+    forecast_url = (
+        f"https://api.weather.gov/gridpoints/{grid_id}/{grid_x},{grid_y}/forecast"
+    )
     forecast_res = requests.get(forecast_url, headers=headers)
     forecast_res.raise_for_status()
     forecast_data = forecast_res.json()
@@ -73,31 +76,32 @@ def process_noaa_point_forecast_periods(
     noaa_forecast_clean = []
 
     for period in periods:
-        noaa_forecast_clean.append({
-            "start": period.get("startTime"),
-            "end": period.get("endTime"),
-            "temperature": period.get("temperature"),
-            "probability_precipitation": period.get("probabilityOfPrecipitation", {}).get("value"),
-            "wind_speed": period.get("windSpeed"),
-            "wind_direction": period.get("windDirection"),
-            "short_forecast": period.get("shortForecast"),
-            "detailed_forecast": period.get("detailedForecast"),
-            "icon": period.get("icon"),
-        })
+        noaa_forecast_clean.append(
+            {
+                "start": period.get("startTime"),
+                "end": period.get("endTime"),
+                "temperature": period.get("temperature"),
+                "probability_precipitation": period.get(
+                    "probabilityOfPrecipitation", {}
+                ).get("value"),
+                "wind_speed": period.get("windSpeed"),
+                "wind_direction": period.get("windDirection"),
+                "short_forecast": period.get("shortForecast"),
+                "detailed_forecast": period.get("detailedForecast"),
+                "icon": period.get("icon"),
+            }
+        )
 
     if not noaa_forecast_clean:
         return None
 
-    return (
-        pl.DataFrame(noaa_forecast_clean)
-        .with_columns(
-            start=pl.col("start")
-            .str.to_datetime(format="%Y-%m-%dT%H:%M:%S%:z", time_unit="us", time_zone="UTC")
-            .dt.convert_time_zone("America/Denver")
-            .dt.replace_time_zone(None),
-            end=pl.col("end")
-            .str.to_datetime(format="%Y-%m-%dT%H:%M:%S%:z", time_unit="us", time_zone="UTC")
-            .dt.convert_time_zone("America/Denver")
-            .dt.replace_time_zone(None),
-        )
+    return pl.DataFrame(noaa_forecast_clean).with_columns(
+        start=pl.col("start")
+        .str.to_datetime(format="%Y-%m-%dT%H:%M:%S%:z", time_unit="us", time_zone="UTC")
+        .dt.convert_time_zone("America/Denver")
+        .dt.replace_time_zone(None),
+        end=pl.col("end")
+        .str.to_datetime(format="%Y-%m-%dT%H:%M:%S%:z", time_unit="us", time_zone="UTC")
+        .dt.convert_time_zone("America/Denver")
+        .dt.replace_time_zone(None),
     )
