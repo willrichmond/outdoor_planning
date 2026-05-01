@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Literal, Tuple, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import streamlit as st
+import altair as alt
 
 
 def get_noaa_flow_forecast(
@@ -1250,3 +1251,233 @@ def get_color_flow_range(row: pd.Series) -> List[str]:
         else ""
         for col in row.index
     ]
+
+
+def get_section_color_flow_bands(
+    kayaking_levels_section: pl.DataFrame,
+    section_overlay: dict,
+) -> pl.DataFrame:
+    """Build a DataFrame of colored flow-level bands for a river section chart.
+
+    Computes background band boundaries (y1, y2) and colors based on the
+    observed river level range relative to the section's kayaking thresholds.
+    The active river level range determines which bands are included so the
+    chart scale stays relevant to current conditions.
+
+    Band colors follow a standard kayaking difficulty convention:
+        - #E74C3C (red)   : below or above recommended flow
+        - #89CFF0 (blue)  : low flow
+        - #2ECC71 (green) : medium flow
+        - #FFEA00 (yellow): high flow
+
+    Args:
+        kayaking_levels_section: Polars DataFrame containing observed river
+            data for a single section. Must have columns mountain_time
+            (datetime) and river_level (numeric).
+        section_overlay: Dict of named flow thresholds for the section.
+            Expected keys: min_level, medium_level, high_level, max_level,
+            all as numeric values in the same units as river_level.
+
+    Returns:
+        A Polars DataFrame with one row per band and columns:
+            y1 (Float64): Lower boundary of the band.
+            y2 (Float64): Upper boundary of the band.
+            color (Utf8): Hex color code for the band.
+            x_min (datetime): Earliest timestamp in kayaking_levels_section.
+            x_max (datetime): Latest timestamp in kayaking_levels_section.
+    """
+    river_level_min = kayaking_levels_section["river_level"].min()
+    river_level_max = kayaking_levels_section["river_level"].max()
+    x_min = kayaking_levels_section["mountain_time"].min()
+    x_max = kayaking_levels_section["mountain_time"].max()
+
+    # River is entirely below minimum — show only the lowest two bands so the
+    # chart scale highlights how far off minimum is
+    if river_level_max < section_overlay["min_level"]:
+        bands_dict = {
+            "y1": [0, section_overlay["min_level"]],
+            "y2": [section_overlay["min_level"], section_overlay["medium_level"]],
+            "color": ["#E74C3C", "#89CFF0"],
+        }
+
+    # River is entirely above maximum — show only the upper two bands so the
+    # chart scale highlights how far above max it is
+    elif river_level_min > section_overlay["max_level"]:
+        bands_dict = {
+            "y1": [section_overlay["high_level"], section_overlay["max_level"]],
+            "y2": [section_overlay["max_level"], (river_level_max * 1.1)],
+            "color": ["#FFEA00", "#E74C3C"],
+        }
+
+    # River is within the low-to-high range — show four bands anchored just
+    # below minimum so the chart scale covers the full paddling window
+    elif (
+        river_level_min > section_overlay["min_level"]
+        and river_level_max < section_overlay["high_level"]
+    ):
+        bands_dict = {
+            "y1": [
+                (section_overlay["min_level"] / 2),
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+            ],
+            "y2": [
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                (section_overlay["high_level"] * 2 + section_overlay["max_level"]) / 3,
+            ],
+            "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00"],
+        }
+
+    # River is above medium — show four bands starting just below medium so
+    # the chart scale focuses on the medium-to-max range
+    elif river_level_min > section_overlay["medium_level"]:
+        bands_dict = {
+            "y1": [
+                (section_overlay["min_level"] + section_overlay["medium_level"]) / 2,
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+            ],
+            "y2": [
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+                (section_overlay["max_level"] * 1.1),
+            ],
+            "color": ["#89CFF0", "#2ECC71", "#FFEA00", "#E74C3C"],
+        }
+
+    # River spans the full range — show all five bands from zero so the chart
+    # scale covers every threshold from below minimum through above maximum
+    else:
+        bands_dict = {
+            "y1": [
+                0,
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+            ],
+            "y2": [
+                section_overlay["min_level"],
+                section_overlay["medium_level"],
+                section_overlay["high_level"],
+                section_overlay["max_level"],
+                (section_overlay["max_level"] * 1.1),
+            ],
+            "color": ["#E74C3C", "#89CFF0", "#2ECC71", "#FFEA00", "#E74C3C"],
+        }
+
+    # x_min and x_max are added so the bands span the full time range of the plot
+    return pl.DataFrame(
+        bands_dict, schema={"y1": pl.Float64, "y2": pl.Float64, "color": pl.Utf8}
+    ).with_columns(
+        [
+            pl.lit(x_min).alias("x_min"),
+            pl.lit(x_max).alias("x_max"),
+        ]
+    )
+
+def get_section_flow_chart(flow_bands: pl.DataFrame, levels_standard: pl.DataFrame, levels_max: pl.DataFrame, section_overlay: dict, river_details_section_option: str) -> alt.Chart:
+    """Build an Altair chart of river flow levels with colored background bands.
+
+    Combines a colored band layer (from get_section_color_flow_bands_df) with
+    one or two flow lines. A standard flow line is always included; a max flow
+    line is added when data is available. The y-axis domain is derived from the
+    band boundaries so the scale stays relevant to current conditions.
+
+    Args:
+        flow_bands: Polars DataFrame of band boundaries and colors, as returned
+            by get_section_color_flow_bands_df. Must have columns y1, y2,
+            color, x_min, and x_max.
+        levels_standard: Polars DataFrame of standard gauge readings. Must have
+            columns mountain_time (datetime) and river_level (numeric).
+        levels_max: Polars DataFrame of maximum gauge readings. Must have
+            columns mountain_time (datetime) and river_level (numeric).
+            If empty, the max flow line is omitted.
+        section_overlay: Dict of flow thresholds and metadata for the section.
+            Must contain the key flow_unit (str) for the y-axis label.
+        river_details_section_option: Display name of the river section, used
+            as the chart title.
+
+    Returns:
+        An Altair layered Chart combining the background bands and flow lines.
+    """
+
+    # The scale for all chart elements
+    chart_domain = [
+        flow_bands["y1"].min(),
+        flow_bands["y2"].max(),
+    ]
+
+    # The background color bands
+    bands = (
+        alt.Chart(flow_bands)
+        .mark_rect(opacity=0.6)
+        .encode(
+            x=alt.X(
+                "x_min:T",
+                axis=alt.Axis(
+                    title="Date",
+                ),
+            ),
+            x2=alt.X2("x_max:T"),
+            y=alt.Y(
+                "y1:Q",
+                axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+                scale=alt.Scale(domain=chart_domain, clamp=True),
+            ),
+            y2=alt.Y2(
+                "y2:Q",
+            ),
+            color=alt.Color("color:N", scale=None),
+        )
+        .properties(
+            title={
+                "text": [f"{river_details_section_option} Flows"],
+                "color": "black",
+                "anchor": "start",
+            }
+        )
+    )
+
+    # Line for standard flows
+    line_standard = (
+        alt.Chart(levels_standard)
+        .mark_line(color="#2c3e6b", strokeWidth=2)
+        .encode(
+            x=alt.X("mountain_time:T", axis=alt.Axis(title="Date")),
+            y=alt.Y(
+                "river_level:Q",
+                scale=alt.Scale(domain=chart_domain, clamp=True),
+                axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+            ),
+        )
+    )
+
+    # The line for max flows (if the value exists)
+    if not levels_max.is_empty():
+        line_max = (
+            alt.Chart(levels_max)
+            .mark_line(
+                color="#e67e22",
+                strokeWidth=2,
+            )
+            .encode(
+                x=alt.X("mountain_time:T", axis=alt.Axis(title="Date")),
+                y=alt.Y(
+                    "river_level:Q",
+                    scale=alt.Scale(domain=chart_domain, clamp=True),
+                    axis=alt.Axis(title=f"River Level {section_overlay['flow_unit']}"),
+                ),
+            )
+        )
+        chart = line_standard + line_max + bands
+
+    else:
+        chart = line_standard + bands
+
+    return chart
