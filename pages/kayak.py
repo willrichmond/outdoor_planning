@@ -14,6 +14,7 @@ from utils.kayak_utils import (
     get_section_color_flow_bands,
     get_section_flow_chart,
 )
+from utils.weather_utils import get_noaa_point_forecast_dataframe
 from data.kayak.kayak_static import section_list, gauge_list, river_list
 
 
@@ -99,11 +100,14 @@ def run_river_flow_apis(
 
     kayaking_levels_current = get_current_river_levels(kayaking_levels_range, river_df)
 
+    section_point_weather_forecast = get_noaa_point_forecast_dataframe(df=section_df.select('section_id', 'lat', 'lon'), identifier_column='section_id')
+
     return (
         kayaking_levels_current,
         kayaking_levels_range,
         gauge_run_details,
         clean_gauge_data,
+        section_point_weather_forecast
     )
 
 
@@ -115,6 +119,7 @@ with st.spinner("Fetching river levels..."):
         kayaking_levels_range,
         gauge_run_details,
         clean_gauge_data,
+        section_point_weather_forecast,
     ) = run_river_flow_apis(gauge_list, section_df, river_df)
 
 
@@ -260,6 +265,21 @@ with tab_section_details:
     with st.expander("Flow levels data table"):
         st.dataframe(kayaking_levels_section)
 
+    with st.expander("Weather Forecast"):
+        selected_point_weather_forecast = section_point_weather_forecast.filter(
+            pl.col("section_id") == section_overlay["section_id"]
+        )
+
+        if selected_point_weather_forecast is not None and len(selected_point_weather_forecast) > 0:
+            st.dataframe(selected_point_weather_forecast,
+                         column_config={
+        "icon": st.column_config.ImageColumn(
+            "Weather",
+        )
+    },)
+        else:
+            st.write("No weather forecast data available for this section.")
+
     if section_overlay["video"]:
         with st.expander("Video"):
             for section_video in section_overlay["video"]:
@@ -272,3 +292,6 @@ with tab_gauges:
 
     st.header("Gauge Data Table")
     st.dataframe(clean_gauge_data)
+
+
+

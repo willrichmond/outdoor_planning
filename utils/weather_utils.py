@@ -1,5 +1,7 @@
 import polars as pl
 import requests
+from utils.logger import logger
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_noaa_point_forecast_periods(lat: float, lon: float) -> list[dict]:
@@ -105,3 +107,86 @@ def process_noaa_point_forecast_periods(
         .dt.convert_time_zone("America/Denver")
         .dt.replace_time_zone(None),
     )
+
+def process_noaa_point_forecast(
+    row: dict,
+    identifier_column: str,
+) -> pl.DataFrame | None:
+    """Fetch and process a NOAA forecast for a single location.
+
+    Calls get_noaa_point_forecast_periods and process_noaa_point_forecast_periods
+    for the lat/lon in row, then tags the result with the row's identifier.
+    Exceptions are not caught here and propagate to the caller.
+
+    Args:
+        row: Dict representing a single location. Must contain keys lat (float),
+            lon (float), and the key named by identifier_column.
+        identifier_column: Name of the key in row whose value is used to tag
+            the forecast rows in the returned DataFrame.
+
+    Returns:
+        A Polars DataFrame of forecast periods with an additional column named
+        after identifier_column. Returns None if no forecast periods were returned.
+    """
+    identifier = row[identifier_column]
+    lat = row["lat"]
+    lon = row["lon"]
+
+    periods = get_noaa_point_forecast_periods(lat, lon)
+    forecast_df = process_noaa_point_forecast_periods(periods)
+
+    if forecast_df is not None:
+        forecast_df = forecast_df.with_columns(
+            pl.lit(identifier).alias(identifier_column)
+        )
+        logger.info(f"Successfully fetched forecast for {identifier} at ({lat}, {lon}).")
+        return forecast_df
+
+    logger.info(f"No forecast periods returned for {identifier} at ({lat}, {lon}).")
+    return None
+
+
+def get_noaa_point_forecast_dataframe(
+    df: pl.DataFrame,
+    identifier_column: str,
+) -> pl.DataFrame | None:
+    """Fetch and combine NOAA forecasts for multiple locations concurrently.
+
+    Submits one call to process_noaa_point_forecast per row in df using a
+    thread pool, since each request is independent and I/O-bound. Successful
+    results are concatenated vertically. Rows that raise an exception are
+    skipped and logged.
+
+    Args:
+        df: Polars DataFrame where each row represents a location. Must contain
+            columns lat (float), lon (float), and the column named by
+            identifier_column.
+        identifier_column: Name of the column in df whose value is used to tag
+            each location's forecast rows in the returned DataFrame.
+
+    Returns:
+        A Polars DataFrame of all successfully fetched forecasts concatenated
+        vertically, with an additional column named after identifier_column.
+        Returns None if no forecasts were successfully fetched.
+    """
+    forecast_all = []
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {
+            executor.submit(process_noaa_point_forecast, row, identifier_column): row
+            for row in df.to_dicts()
+        }
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                if result is not None:
+                    forecast_all.append(result)
+            except Exception as e:
+                logger.error(
+                    f"Error processing {futures[future][identifier_column]}: {e}"
+                )
+
+    if forecast_all:
+        return pl.concat(forecast_all, how="vertical")
+    else:
+        return None
