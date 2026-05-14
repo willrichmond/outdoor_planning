@@ -585,12 +585,14 @@ section_list = [
         "link": [
             "https://www.whitewaterguidebook.com/idaho/snake-river-murtaugh/",
             "https://www.oregonkayaking.net/rivers/murtaugh/murtaugh.html",
+            "https://www.google.com/maps/d/viewer?mid=1UDNGqpXG4ZJ3p9U_2kRn57qMkZGsddk&ll=42.73448815784179%2C-114.49304604999999&z=10",
         ],
         "video": [
             "https://www.youtube.com/watch?v=pNkSCPHRA9k",
             "https://www.youtube.com/watch?v=24O2zdH3bxQ",
             "https://www.youtube.com/watch?v=dwFAPIqpDSg",
             "https://www.youtube.com/watch?v=Wa2HcFFjXyI",
+            'https://www.youtube.com/watch?v=jurQz_Y20q4',
         ],
     },
     {

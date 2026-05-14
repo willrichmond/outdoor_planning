@@ -17,6 +17,7 @@ from utils.kayak_utils import (
 from utils.weather_utils import get_noaa_point_forecast_dataframe
 from data.kayak.kayak_static import section_list, gauge_list, river_list
 
+st.set_page_config(layout='wide')
 
 @st.cache_data(ttl=3600)
 def load_static_data() -> Tuple[pl.DataFrame, List[Dict[str, Any]], pl.DataFrame]:
